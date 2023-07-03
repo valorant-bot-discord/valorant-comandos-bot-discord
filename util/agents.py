@@ -1,24 +1,11 @@
+import requests
+
+
 def agents():
-    return [
-        "Astra",
-        "Breach",
-        "Brimstone",
-        "Chamber",
-        "Cypher",
-        "Fade",
-        "Gekko",
-        "Harbon",
-        "Jett",
-        "KAYO",
-        "Killjoy",
-        "Neon",
-        "Omen",
-        "Phoenix",
-        "Raze",
-        "Reyna",
-        "Sage",
-        "Skye",
-        "Sova",
-        "Viper",
-        "Yoru",
-    ]
+    response = requests.get("https://valorant-api.com/v1/agents")
+    agents = []
+    for agent in response.json()["data"]:
+        if agent["isPlayableCharacter"]:
+            agents.append(agent["displayName"])
+
+    return agents
