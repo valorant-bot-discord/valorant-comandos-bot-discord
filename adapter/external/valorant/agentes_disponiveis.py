@@ -1,16 +1,13 @@
-from typing import Any
-
 import requests
 
 from adapter.config.logs.logger_config import ConfigStructureLogger
 from adapter.constantes import API_VALORANT
-from domain.agente import Agente
+from domain.entity.agente import Agente
 
 LOG_CODE = "consulta-infos-agentes"
 logger = ConfigStructureLogger()
 
-
-def obter_agentes() -> list[Any] | None:
+def obter_agentes() -> list[Agente] | None:
     agentes = []
     try:
         response = requests.get(API_VALORANT)
