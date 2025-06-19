@@ -51,4 +51,3 @@ class ConfigStructureLogger:
 
     def critical(self, *, code: str, message: str, throw: Exception = None):
         self.logger._log(logging.CRITICAL, message, args=(), extra={"code": code, "throw": throw})
-
