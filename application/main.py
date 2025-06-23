@@ -1,10 +1,11 @@
+from discord.ext.commands import Context
+
 from adapter.config.bot_config import create_bot
 from adapter.config.inicializacao_config import config
 from application.constantes import AUTHORIZED_SERVER_ID
-from adapter.entrypoint.valorant.valorant_comandos import Valorant
 from discord import Message
-from discord.ext.commands import Context
-from adapter.config.logs.logger_config import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from application.usecase.sortear_agentes_jogadores_usecase import SortearAgentesJogadoresUseCase
 
 LOG_CODE = "executa-comando-iniciar-bot"
 bot = create_bot()
@@ -38,7 +39,7 @@ async def on_message(message: Message) -> None:
 
 @bot.command(name='valorant')
 async def valorant(ctx: Context) -> None:
-    await Valorant(bot, ctx).registro_comando()
+    await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
 
 
 if __name__ == "__main__":

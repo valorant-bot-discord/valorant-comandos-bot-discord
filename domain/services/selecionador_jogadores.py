@@ -27,4 +27,4 @@ class SelecionadorJogadores:
         return len(self.selecionados_ids) > 0
 
     def obter_selecionados(self) -> List[Jogador]:
-        return [j for j in self.jogadores if j.id in self.selecionados_ids]
+        return [jogador for jogador in self.jogadores if jogador.id in self.selecionados_ids]
