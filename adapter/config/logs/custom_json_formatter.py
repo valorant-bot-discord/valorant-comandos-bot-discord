@@ -6,7 +6,7 @@ from datetime import datetime
 from adapter.config.inicializacao_config import config
 from adapter.constantes import DATETIME_FORMAT
 from adapter.exception.log_exceptions import LoggerErrorException
-from adapter.utils.logger_utils import extract_throw_info, get_relative_path
+from adapter.utils.logger_utils import extract_throw_info
 
 
 class CustomJsonFormatter(logging.Formatter):
@@ -16,7 +16,6 @@ class CustomJsonFormatter(logging.Formatter):
                 "ApplicationName": config.APPLICATION_NAME,
                 "Code": getattr(record, "code", "sem-codigo"),
                 "Message": record.getMessage(),
-                "Path": get_relative_path(record.pathname, record.lineno),
                 "Datetime": datetime.fromtimestamp(record.created).strftime(DATETIME_FORMAT),
                 "Severity": record.levelname
             }
