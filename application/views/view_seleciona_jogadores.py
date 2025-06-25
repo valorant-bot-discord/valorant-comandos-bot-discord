@@ -11,7 +11,6 @@ logger = ConfigStructureLogger()
 LOG_CODE = "cria-view-selecionador-jogadores"
 
 
-# TODO "filtrar opções para n sortear certas funções"
 # TODO "tratar erro quando for mais de 24 jogadores"
 
 class ViewSelecionaJogadores(View):
@@ -47,8 +46,6 @@ class ViewSelecionaJogadores(View):
                     texto_selecionados += "\n".join(
                         f"✅ {jogador.nome}" for jogador in self.selecionador_jogadores.obter_selecionados()
                     )
-                else:
-                    texto_selecionados = "Nenhum jogador selecionado."
 
                 await interaction.response.edit_message(content="", view=self)
 

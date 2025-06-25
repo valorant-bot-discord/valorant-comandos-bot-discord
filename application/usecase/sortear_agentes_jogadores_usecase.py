@@ -23,6 +23,7 @@ class SortearAgentesJogadoresUseCase(ComandosBase):
             membros = self.discord_informacoes.listar_membros_canal(canal)
 
             view = ViewSelecionaJogadores(membros, self.ctx)
-            await self.ctx.send("Selecione os jogadores que vão participar:", view=view)
+            message = await self.ctx.send("Selecione os jogadores:", view=view)
+            view.message = message
         except Exception as ex:
             logger.error(code=LOG_CODE, message="Erro inesperado", throw=ex)
