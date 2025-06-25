@@ -1,11 +1,12 @@
 import requests
 
-from adapter.config.logs.logger_config import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import ConfigStructureLogger
 from adapter.constantes import API_VALORANT
 from domain.entity.agente import Agente
 
 LOG_CODE = "consulta-infos-agentes"
 logger = ConfigStructureLogger()
+
 
 def obter_agentes() -> list[Agente] | None:
     agentes = []
@@ -25,5 +26,5 @@ def obter_agentes() -> list[Agente] | None:
         return None
 
     except Exception as ex:
-        logger.error(code=LOG_CODE, message="Erro ao processar agentes", throw=ex)
+        logger.error(code=LOG_CODE, message="Erro inesperado", throw=ex)
         return None

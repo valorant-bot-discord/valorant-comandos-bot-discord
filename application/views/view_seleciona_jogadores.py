@@ -4,66 +4,70 @@ from discord import ButtonStyle, Interaction
 from application.constantes import WAIT_FOR_MESSAGE_TIMEOUT
 from domain.services.selecionador_jogadores import SelecionadorJogadores
 from domain.services.sorteador_agentes_valorant import SorteadorDeAgentesValorant
-from adapter.config.logs.logger_config import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import ConfigStructureLogger
 from utils.discord_view_utils import handle_view_timeout
 
 logger = ConfigStructureLogger()
+LOG_CODE = "cria-view-selecionador-jogadores"
 
 
-class ViewSelectorJogadores(View):
+# TODO "tratar erro quando for mais de 24 jogadores"
+
+class ViewSelecionaJogadores(View):
     def __init__(self, jogadores, ctx):
         super().__init__(timeout=WAIT_FOR_MESSAGE_TIMEOUT)
         self.ctx = ctx
-        self.selecionador = SelecionadorJogadores(jogadores)
+        self.selecionador_jogadores = SelecionadorJogadores(jogadores)
+        self.selecionador_agentes = SorteadorDeAgentesValorant()
         self.message = None
 
         for jogador in jogadores:
-            botao = Button(label=jogador.nome, style=ButtonStyle.secondary, custom_id=str(jogador.id))
+            botao = Button(label=jogador.nome, style=ButtonStyle.grey, custom_id=str(jogador.id))
             botao.callback = self.criar_callback(botao, jogador.id)
             self.add_item(botao)
 
-        botao_sortear = Button(label="Sortear Agentes", style=ButtonStyle.primary)
+        botao_sortear = Button(label="Sortear Agentes", style=ButtonStyle.blurple)
         botao_sortear.callback = self.sortear_agentes
         self.add_item(botao_sortear)
 
     def criar_callback(self, botao: Button, jogador_id: int):
         async def callback(interaction: Interaction):
             try:
-                self.selecionador.alternar_selecao(jogador_id)
-                if self.selecionador.esta_selecionado(jogador_id):
+                self.selecionador_jogadores.alternar_selecao(jogador_id)
+                if self.selecionador_jogadores.esta_selecionado(jogador_id):
                     botao.style = ButtonStyle.success
                     botao.label = f"✅ {botao.label.strip('✅ ').strip()}"
                 else:
-                    botao.style = ButtonStyle.secondary
+                    botao.style = ButtonStyle.grey
                     botao.label = botao.label.strip('✅ ').strip()
 
                 texto_selecionados = "Jogadores selecionados:\n"
-                if self.selecionador.tem_selecionados():
+                if self.selecionador_jogadores.tem_selecionados():
                     texto_selecionados += "\n".join(
-                        f"✅ {j.nome}" for j in self.selecionador.obter_selecionados()
+                        f"✅ {jogador.nome}" for jogador in self.selecionador_jogadores.obter_selecionados()
                     )
-                else:
-                    texto_selecionados = "Nenhum jogador selecionado."
 
                 await interaction.response.edit_message(content="", view=self)
 
-            except Exception as e:
-                logger.error(code="erro-selecao-jogador", message="Erro ao alternar seleção", throw=e)
-                await interaction.response.send_message("Erro ao atualizar seleção.", ephemeral=True)
+            except Exception as ex:
+                message = ex.args[0] if ex.args else "Erro ao alternar seleção."
+                logger.error(code=LOG_CODE, message=message, throw=ex)
+                await interaction.response.send_message("Erro ao alternar seleção.", ephemeral=True)
 
         return callback
 
     async def sortear_agentes(self, interaction: Interaction):
-        if not self.selecionador.tem_selecionados():
+        if not self.selecionador_jogadores.tem_selecionados():
             await interaction.response.send_message("Selecione pelo menos um jogador.", ephemeral=True)
-            logger.warning(code="sortear-sem-jogadores", message="Tentativa de sortear sem jogadores selecionados")
+            logger.warning(code=LOG_CODE, message="Tentativa de sortear sem jogadores selecionados")
             return
 
-        selecionados = self.selecionador.obter_selecionados()
+        selecionados = self.selecionador_jogadores.obter_selecionados()
 
-        resultado = SorteadorDeAgentesValorant().sortear(selecionados)
+        resultado = self.selecionador_agentes.sortear(selecionados)
 
-        texto = "\n".join([f"{j.nome} → {a.nome} ({a.funcao})" for j, a in resultado.items()])
+        texto = "\n".join(
+            [f"{jogador.nome} → {agente.nome} ({agente.funcao})" for jogador, agente in resultado.items()])
         await interaction.response.send_message(f"Sorteio finalizado:\n{texto}")
 
     async def on_timeout(self):
