@@ -1,0 +1,51 @@
+# Workflow unificado: Lint com flake8 e pylint, testes com pytest, para múltiplas versões do Python.
+# Realiza tudo que os 3 fluxos anteriores executavam, evitando redundância.
+
+name: Python CI
+
+on:
+  push:
+    branches:
+      - feature/test-workflows
+  pull_request:
+    branches:
+      - feature/test-workflows
+      - develop
+      - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.9", "3.10", "3.11" ]  # Ajuste a lista conforme necessidade
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pylint pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Lint with flake8
+        run: |
+          # Para erros críticos (parar build se houver esses problemas)
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Para estatísticas e código mais limpo
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Lint with pylint
+        run: |
+          pylint $(git ls-files '*.py')
+
+      - name: Test with pytest
+        run: |
+          pytest
