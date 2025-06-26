@@ -13,7 +13,7 @@ class CustomJsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         try:
             log_data = {
-                "ApplicationName": config.APPLICATION_NAME,
+                "ApplicationName": config.application_name,
                 "Code": getattr(record, "code", "sem-codigo"),
                 "Message": record.getMessage(),
                 "Datetime": datetime.fromtimestamp(record.created).strftime(DATETIME_FORMAT),
@@ -25,7 +25,7 @@ class CustomJsonFormatter(logging.Formatter):
             return json.dumps(log_data, ensure_ascii=False)
         except Exception as ex:
             fallback_log = {
-                "ApplicationName": config.APPLICATION_NAME,
+                "ApplicationName": config.application_name,
                 "Code": "sem-codigo",
                 "Message": "Erro ao formatar log",
                 "Severity": "CRITICAL",
