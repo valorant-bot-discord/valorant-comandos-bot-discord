@@ -42,6 +42,11 @@ jobs:
           # Para estatísticas e código mais limpo
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+      - name: Rodar Pylint (Ignorando docstrings e ordem de imports)
+        run: |
+          cd bot-discord
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412
+
       - name: Lint with pylint
         run: |
           pylint $(git ls-files '*.py')
