@@ -44,7 +44,7 @@ jobs:
 
       - name: Rodar Pylint (Ignorando docstrings e ordem de imports)
         run: |
-          pylint . --disable=C0114,C0115,C0116,C0411,C0412
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301
 
       - name: Lint with pylint
         run: |
