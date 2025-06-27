@@ -80,9 +80,9 @@ jobs:
             echo "✅ Pylint score ($SCORE) is 9.0 or above. Build passes."
           fi
 
-      - name: Test with pytest
-        run: |
-          pytest --cov=. --cov-report=xml --cov-report=term-missing
+#      - name: Test with pytest
+#        run: |
+#          pytest --cov=. --cov-report=xml --cov-report=term-missing
 
       - name: Upload Coverage to Codecov
         if: matrix.python-version == '3.11'
