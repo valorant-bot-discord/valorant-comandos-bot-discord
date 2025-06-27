@@ -48,7 +48,13 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint $(git ls-files '*.py') --fail-under=9; STATUS=$?; test $STATUS -eq 0 -o $STATUS -eq 4
+          pylint $(git ls-files '*.py') --fail-under=9
+          STATUS=$?
+          if [ $STATUS -eq 0 ] || [ $STATUS -eq 4 ]; then
+            exit 0
+          else
+            exit $STATUS
+          fi
 
       - name: Test with pytest
         run: |
