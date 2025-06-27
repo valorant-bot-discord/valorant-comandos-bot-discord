@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.11" ]
+        python-version: [ "3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -97,22 +97,22 @@ jobs:
           echo "## 📊 Lint Summary"
           echo "### Flake8 Results"
           if [ -f flake8_report.json ]; then
-            python -c "
-            import json
-            try:
-                with open('flake8_report.json', 'r') as f:
-                    data = json.load(f)
-                if data:
-                    print(f'Found {len(data)} style issues')
-                    for issue in data[:5]:  # Show first 5 issues
-                        print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
-                    if len(data) > 5:
-                        print(f'  ... and {len(data) - 5} more issues')
-                else:
-                    print('✅ No style issues found')
-            except:
-                print('Could not parse flake8 results')
-            "
+            python3 -c "
+
+          try:
+              with open('flake8_report.json', 'r') as f:
+                  data = json.load(f)
+              if data:
+                  print(f'Found {len(data)} style issues')
+                  for issue in data[:5]:  # Show first 5 issues
+                      print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
+                  if len(data) > 5:
+                      print(f'  ... and {len(data) - 5} more issues')
+              else:
+                  print('✅ No style issues found')
+          except Exception as e:
+              print(f'Could not parse flake8 results: {e}')
+          "
           else
             echo "No flake8 report found"
           fi
@@ -142,12 +142,12 @@ jobs:
       startsWith(github.ref_name, 'feature/') && 
       needs.build.result == 'success' &&
       github.event_name == 'push' 
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for better PR context
+          fetch-depth: 0
 
       - name: Check if PR already exists
         id: check_pr
