@@ -1,5 +1,9 @@
 name: Python CI
 
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   push:
     branches: [ feature/test-workflows ]
@@ -136,13 +140,13 @@ jobs:
             echo "pr_exists=false" >> $GITHUB_OUTPUT
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create pull request
         if: steps.check_pr.outputs.pr_exists == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref_name }}
           base: develop
           title: "🚀 Auto PR: ${{ github.ref_name }}"
@@ -168,4 +172,5 @@ jobs:
           gh pr comment ${{ steps.check_pr.outputs.pr_number }} \
             --body "✅ CI checks passed for commit ${{ github.sha }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN:
+            ${{ secrets.GITHUB_TOKEN }}
