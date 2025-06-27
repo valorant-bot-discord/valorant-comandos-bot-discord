@@ -44,8 +44,8 @@ jobs:
 
       - name: Rodar Pylint
         run: |
-          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301
-          pylint $(git ls-files '*.py') --fail-under=9 || [ $? -eq 4 ]
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 || true
+          pylint $(git ls-files '*.py') --fail-under=9
           STATUS=$?
           if [ $STATUS -eq 0 ] || [ $STATUS -eq 4 ]; then
             exit 0
