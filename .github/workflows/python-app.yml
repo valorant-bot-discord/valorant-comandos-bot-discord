@@ -5,8 +5,9 @@ permissions:
   pull-requests: write
 
 on:
-  pull_request:
-    branches: [ develop, prod ]
+  push:
+    branches:
+      - 'feature/**'
 
 jobs:
   build:
@@ -64,12 +65,12 @@ jobs:
       # - name: Test with pytest
       #   run: pytest --cov=. --cov-report=xml --cov-report=term-missing
 
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.11'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+      #      - name: Upload coverage to Codecov
+      #        if: matrix.python-version == '3.11'
+      #        uses: codecov/codecov-action@v4
+      #        with:
+      #          file: ./coverage.xml
+      #          fail_ci_if_error: false
 
       - name: Display lint summary
         if: always()
@@ -118,28 +119,14 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: >
-      startsWith(github.ref_name, 'feature/') && 
-      needs.build.result == 'success' &&
-      github.event_name == 'push'
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/heads/feature/') &&
+      needs.build.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Check for existing PR
-        id: check_pr
-        run: |
-          EXISTING_PR=$(gh pr list --head ${{ github.ref_name }} --base develop --json number --jq '.[0].number')
-          echo "Found PR: $EXISTING_PR"
-          if [ -n "$EXISTING_PR" ]; then
-            echo "pr_exists=true" >> $GITHUB_OUTPUT
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-          else
-            echo "pr_exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v6
@@ -163,12 +150,3 @@ jobs:
             automated
             feature
           draft: false
-
-      - name: Update existing PR
-        if: steps.check_pr.outputs.pr_exists == 'true'
-        run: |
-          gh pr comment ${{ steps.check_pr.outputs.pr_number }} \
-            --body "✅ CI checks passed for commit ${{ github.sha }}"
-        env:
-          GITHUB_TOKEN:
-            ${{ secrets.GITHUB_TOKEN }}
