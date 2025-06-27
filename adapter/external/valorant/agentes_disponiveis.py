@@ -11,7 +11,7 @@ logger = ConfigStructureLogger()
 def obter_agentes() -> list[Agente] | None:
     agentes = []
     try:
-        response = requests.get(API_VALORANT)
+        response = requests.get(API_VALORANT, timeout=0.5)
 
         for agent in response.json()["data"]:
             if agent.get("isPlayableCharacter"):

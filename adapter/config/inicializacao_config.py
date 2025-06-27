@@ -18,8 +18,6 @@ class BotConfig:
             if not self.token_server:
                 raise TokenAusenteException("TOKEN_SERVER")
 
-        except TokenAusenteException:
-            raise
         except Exception:
             raise
 
@@ -34,7 +32,7 @@ class BotConfig:
             load_dotenv(dotenv_path)
         except ErroCarregamentoEnvException as ex:
             raise
-        except Exception as ex:
+        except Exception:
             raise
 
 

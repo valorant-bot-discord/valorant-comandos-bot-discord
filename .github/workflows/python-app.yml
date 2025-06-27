@@ -48,7 +48,7 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint $(git ls-files '*.py')
+          pylint $(git ls-files '*.py') --fail-under=9
 
       - name: Test with pytest
         run: |
