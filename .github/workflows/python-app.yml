@@ -2,13 +2,9 @@ name: Python CI
 
 on:
   push:
-    branches:
-      - feature/test-workflows
+    branches: [ feature/test-workflows ]
   pull_request:
-    branches:
-      - feature/test-workflows
-      - develop
-      - prod
+    branches: [ feature/test-workflows, develop, prod ]
 
 jobs:
   build:
@@ -16,95 +12,78 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.11"]
+        python-version: [ "3.11" ]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pylint pytest pytest-cov  # Added coverage
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flake8 pylint pytest pytest-cov
+          [ -f requirements.txt ] && pip install -r requirements.txt
 
       - name: Lint with flake8
         run: |
-          # Critical errors that fail the build
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Warnings and style checks (don't fail build)
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --format=json --output-file=flake8_report.json
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 \
+                  --statistics --format=json --output-file=flake8_report.json
 
-      - name: Run Pylint
+      - name: Run pylint
         id: pylint_check
         run: |
-          # Run pylint and capture output
-          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --output-format=json:pylint_report.json,text:pylint_output.txt --exit-zero
-          
-          # Extract score more reliably
-          SCORE=$(python -c "
-          import json
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 \
+                  --output-format=json:pylint_report.json,text:pylint_output.txt --exit-zero
+
+          SCORE=$(python3 -c "
+          import json, re
           try:
-              with open('pylint_report.json', 'r') as f:
+              with open('pylint_report.json') as f:
                   data = json.load(f)
               if isinstance(data, dict) and 'score' in data:
                   print(f'{data[\"score\"]:.2f}')
               else:
-                  # Fallback to text parsing
-                  with open('pylint_output.txt', 'r') as f:
-                      content = f.read()
-                  import re
-                  match = re.search(r'Your code has been rated at ([\d.]+)/10', content)
-                  if match:
-                      print(match.group(1))
-                  else:
-                      print('0')
+                  with open('pylint_output.txt') as f:
+                      m = re.search(r'Your code has been rated at ([\d.]+)/10', f.read())
+                      print(m.group(1) if m else '0')
           except:
               print('0')
           ")
-          
-          echo "Pylint Score: $SCORE"
+
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
-          
-          # Use Python for numeric comparison (more reliable than bc)
-          PASS_CHECK=$(python -c "print('true' if float('$SCORE') >= 9.0 else 'false')")
-          if [ "$PASS_CHECK" = "false" ]; then
-            echo "❌ Pylint score ($SCORE) is below 9.0. Failing build."
-            exit 1
-          else
-            echo "✅ Pylint score ($SCORE) is 9.0 or above. Build passes."
-          fi
+          python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
 
-#      - name: Test with pytest
-#        run: |
-#          pytest --cov=. --cov-report=xml --cov-report=term-missing
+      # - name: Test with pytest
+      #   run: pytest --cov=. --cov-report=xml --cov-report=term-missing
 
-      - name: Upload Coverage to Codecov
+      - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
 
-      - name: Display Lint Summary
+      - name: Display lint summary
         if: always()
         run: |
           echo "## 📊 Lint Summary"
-          echo "### Flake8 Results"
+
+          echo "### Flake8"
           if [ -f flake8_report.json ]; then
             python3 -c "
-
+          import json
           try:
-              with open('flake8_report.json', 'r') as f:
+              with open('flake8_report.json') as f:
                   data = json.load(f)
               if data:
                   print(f'Found {len(data)} style issues')
-                  for issue in data[:5]:  # Show first 5 issues
+                  for issue in data[:5]:
                       print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
                   if len(data) > 5:
                       print(f'  ... and {len(data) - 5} more issues')
@@ -116,14 +95,12 @@ jobs:
           else
             echo "No flake8 report found"
           fi
-          
-          echo "### Pylint Results"
-          echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
-          if [ -f pylint_output.txt ]; then
-            echo "Full report available in pylint_output.txt"
-          fi
 
-      - name: Upload Lint Reports
+          echo "### Pylint"
+          echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+          [ -f pylint_output.txt ] && echo "Full report in pylint_output.txt"
+
+      - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -138,57 +115,48 @@ jobs:
   create-pull-request:
     needs: build
     runs-on: ubuntu-latest
-    if: |
+    if: >
       startsWith(github.ref_name, 'feature/') && 
       needs.build.result == 'success' &&
-      github.event_name == 'push' 
-    
+      github.event_name == 'push'
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check if PR already exists
+      - name: Check for existing PR
         id: check_pr
         run: |
-          # Check if PR already exists
           EXISTING_PR=$(gh pr list --head ${{ github.ref_name }} --base develop --json number --jq '.[0].number')
-          if [ "$EXISTING_PR" != "null" ] && [ "$EXISTING_PR" != "" ]; then
-            echo "PR already exists: #$EXISTING_PR"
+          if [ -n "$EXISTING_PR" ]; then
             echo "pr_exists=true" >> $GITHUB_OUTPUT
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
           else
-            echo "No existing PR found"
             echo "pr_exists=false" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Pull Request
+      - name: Create pull request
         if: steps.check_pr.outputs.pr_exists == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref_name }}
           base: develop
-          title: '🚀 Auto PR: ${{ github.ref_name }}'
+          title: "🚀 Auto PR: ${{ github.ref_name }}"
           body: |
             ## 🤖 Automated Pull Request
-            
-            This PR was automatically created because all CI checks passed for branch `${{ github.ref_name }}`.
-            
-            ### ✅ CI Status
-            - **Build**: Passed
-            - **Linting**: Passed
-            - **Tests**: Passed
-            
-            ### 📝 Branch Info
-            - **Source**: `${{ github.ref_name }}`
-            - **Target**: `develop`
-            - **Commit**: ${{ github.sha }}
-            
-            Please review the changes and merge when ready.
+
+            CI passed for branch `${{ github.ref_name }}`.
+
+            **CI Status**
+            - Build: ✅
+            - Lint: ✅
+            - Tests: ✅
+
+            Please review and merge.
           labels: |
             automated
             feature
@@ -197,6 +165,7 @@ jobs:
       - name: Update existing PR
         if: steps.check_pr.outputs.pr_exists == 'true'
         run: |
-          gh pr comment ${{ steps.check_pr.outputs.pr_number }} --body "✅ CI checks passed for latest commit ${{ github.sha }}"
+          gh pr comment ${{ steps.check_pr.outputs.pr_number }} \
+            --body "✅ CI checks passed for commit ${{ github.sha }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
