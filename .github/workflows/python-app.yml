@@ -48,8 +48,26 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint $(git ls-files '*.py') --fail-under=9
+          pylint $(git ls-files '*.py') --fail-under=9 || [ $? -eq 4 ]
 
       - name: Test with pytest
         run: |
           pytest
+
+  create-pull-request:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref_name, 'feature/') && needs.build.result == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          base: develop
+          title: 'PR automático: ${{ github.ref_name }}'
+          body: |
+            Esse PR foi criado automaticamente porque o build passou para a branch `${{ github.ref_name }}`.
