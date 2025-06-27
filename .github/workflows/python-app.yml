@@ -5,10 +5,8 @@ permissions:
   pull-requests: write
 
 on:
-  push:
-    branches: [ feature/test-workflows ]
   pull_request:
-    branches: [ feature/test-workflows, develop, prod ]
+    branches: [ develop, prod ]
 
 jobs:
   build:
