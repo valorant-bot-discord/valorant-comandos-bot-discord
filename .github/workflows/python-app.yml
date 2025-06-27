@@ -116,14 +116,14 @@ jobs:
           retention-days: 30
 
   create-pull-request:
-    needs: build
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' &&
-      startsWith(github.ref, 'refs/heads/feature/') &&
-      needs.build.result == 'success'
-
     steps:
+      - name: Debug info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Branch: ${{ github.ref_name }}"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
@@ -138,16 +138,14 @@ jobs:
           title: "🚀 Auto PR: ${{ github.ref_name }}"
           body: |
             ## 🤖 Automated Pull Request
-
+            
             CI passed for branch `${{ github.ref_name }}`.
-
+            
             **CI Status**
             - Build: ✅
             - Lint: ✅
             - Tests: ✅
-
+            
             Please review and merge.
-          labels: |
-            automated
-            feature
+          labels: automated,feature
           draft: false
