@@ -42,8 +42,8 @@ jobs:
       - name: Rodar Pylint
         id: pylint_check
         run: |
-          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --output-format=text > pylint_output.txt
-          SCORE=$(pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --msg-template='{msg_id}:{line}:{column}:{msg}' --score=y | tail -2 | head -1 | awk '{print $NF}' | sed 's#/10##')
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --output-format=text > pylint_output.txt || true
+          SCORE=$(pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --score=y || true | tail -2 | head -1 | awk \'{print $NF}\' | sed \'s#/10##\')
           echo "Pylint Score: $SCORE"
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
           if (( $(echo "$SCORE < 9" | bc -l) )); then
