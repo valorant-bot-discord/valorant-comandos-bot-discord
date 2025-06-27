@@ -42,13 +42,16 @@ jobs:
           # Para estatísticas e código mais limpo
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Rodar Pylint (Ignorando docstrings e ordem de imports)
+      - name: Rodar Pylint
         run: |
-          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 || true
-
-      - name: Lint with pylint
-        run: |
-          pylint $(git ls-files '*.py') --fail-under=9
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301
+          pylint $(git ls-files '*.py') --fail-under=9 || [ $? -eq 4 ]
+          STATUS=$?
+          if [ $STATUS -eq 0 ] || [ $STATUS -eq 4 ]; then
+            exit 0
+          else
+            exit $STATUS
+          fi
 
       - name: Test with pytest
         run: |
