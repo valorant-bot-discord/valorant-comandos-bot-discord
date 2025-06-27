@@ -133,6 +133,7 @@ jobs:
         id: check_pr
         run: |
           EXISTING_PR=$(gh pr list --head ${{ github.ref_name }} --base develop --json number --jq '.[0].number')
+          echo "Found PR: $EXISTING_PR"
           if [ -n "$EXISTING_PR" ]; then
             echo "pr_exists=true" >> $GITHUB_OUTPUT
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
@@ -143,7 +144,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create pull request
-        if: steps.check_pr.outputs.pr_exists == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
