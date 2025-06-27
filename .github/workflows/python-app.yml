@@ -116,7 +116,12 @@ jobs:
           retention-days: 30
 
   create-pull-request:
+    needs: build
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/heads/feature/') &&
+      needs.build.result == 'success'
     steps:
       - name: Debug info
         run: |
