@@ -40,15 +40,6 @@ jobs:
           pip install flake8 pylint pytest pytest-cov
           [ -f requirements.txt ] && pip install -r requirements.txt
 
-      - name: Análise estática com Flake8
-        run: |
-          echo "Executando Flake8 (apenas erros críticos):"
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
-
-          echo ""
-          echo "Executando Flake8 (verificação completa de estilo e complexidade):"
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics || true
-
       - name: Análise estática com Pylint
         id: pylint_check
         run: |
@@ -76,15 +67,15 @@ jobs:
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
           python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
 
-      - name: Análise de código
+      - name: Análise de código com Flake8
         if: always()
         run: |
           echo "Executando Flake8 (apenas erros críticos):"
-          flake8 . --select=E9,F63,F7,F82 --show-source --statistics || true
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
 
           echo ""
           echo "Executando Flake8 (verificação completa de estilo e complexidade):"
-          flake8 . --max-complexity=10 --max-line-length=127 --statistics || true
+          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics || true
 
       - name: Resumo do Lint
         if: always()
