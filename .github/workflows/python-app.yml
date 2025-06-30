@@ -82,39 +82,35 @@ jobs:
       - name: Análise de código com Flake8
         if: always()
         run: |
-          echo "Desabilitando regras específicas para análise crítica:"
-          echo " - E9: Erros de sintaxe"
-          echo " - F63, F7, F82: Erros de nomes indefinidos, etc"
-          
           echo ""
           echo "Iniciando análise crítica com Flake8 (E9, F63, F7, F82)..."
           flake8 . --select=E9,F63,F7,F82 --show-source --statistics --count | tee flake8_critical.txt
           STATUS_CRITICOS=${PIPESTATUS[0]}
-          
+
           echo ""
           echo "Análise crítica finalizada. Verifique o arquivo flake8_critical.txt."
-          
+
           CRITICAL_ERRORS=$(cat flake8_critical.txt | grep -v "^$")
           QTD_CRITICOS=$(cat flake8_critical.txt | grep -c "^[^ ]")
           echo "Erros críticos encontrados: $QTD_CRITICOS"
-          
+
           echo ""
           echo "Iniciando análise geral de estilo/complexidade com Flake8 (complexidade <= 10, linha <= 127)..."
           flake8 . --max-complexity=10 --max-line-length=127 --statistics --count | tee flake8_all.txt
           STATUS_OUTROS=${PIPESTATUS[0]}
-          
+
           echo ""
           echo "Análise de estilo finalizada. Verifique o arquivo flake8_all.txt."
-          
+
           OTHER_ERRORS=$(cat flake8_all.txt | grep -v "^$")
           QTD_OUTROS=$(cat flake8_all.txt | grep -c "^[^ ]")
           echo "Problemas de estilo/complexidade encontrados: $QTD_OUTROS"
-          
+
           echo ""
           echo "Resumo Flake8:"
           echo " - Erros críticos: $QTD_CRITICOS"
           echo " - Outros problemas: $QTD_OUTROS"
-          
+
           if [ "$QTD_CRITICOS" = "0" ] && [ "$QTD_OUTROS" = "0" ]; then
             echo "✅ Nenhum erro Flake8 encontrado. Passando na análise!"
             exit 0
@@ -122,29 +118,23 @@ jobs:
             echo "⚠️ Foram encontrados $QTD_OUTROS problemas de estilo/complexidade. Recomenda-se revisão."
             exit 0
           else
-            echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8."
+            echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8. Veja abaixo:"
+            cat flake8_critical.txt
             exit 1
           fi
+
 
 
       - name: Resumo do Lint
         if: always()
         run: |
-          echo "## Resumo do Lint"
-          echo ""
-          
           echo "### Flake8 - Erros críticos"
-          ERROS_CRITICOS=$(flake8 . --select=E9,F63,F7,F82 --show-source)
-          QTDE_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82)
-          
+          QTDE_CRITICOS=$(grep -c '^[^ ]' flake8_critical.txt || echo 0)
           if [ "$QTDE_CRITICOS" = "0" ]; then
             echo "✅ Nenhum erro crítico encontrado"
           else
             echo "❌ Foram encontrados $QTDE_CRITICOS erros críticos:"
-            echo "$ERROS_CRITICOS"
-            echo ""
-            echo "----"
-            flake8 . --select=E9,F63,F7,F82 --statistics
+            cat flake8_critical.txt
           fi
           
           echo ""
