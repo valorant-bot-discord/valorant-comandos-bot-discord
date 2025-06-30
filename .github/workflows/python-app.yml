@@ -51,25 +51,22 @@ jobs:
         run: |
           pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 \
                   --output-format=json:pylint_report.json,text:pylint_output.txt --exit-zero
-
-          SCORE=$(python - <<'PY'
-          import json, re, sys, pathlib as p
-          score = 0
-          if p.Path('pylint_report.json').exists():
-              data = json.load(open('pylint_report.json'))
-              score = data.get("score", 0) if isinstance(data, dict) else 0
-          else:
-              m = re.search(r'Your code has been rated at ([\d.]+)/10',
-                            open('pylint_output.txt').read())
-              score = float(m.group(1)) if m else 0
-          print(f"{score:.2f}")
-          PY
-          )
+          SCORE=$(python3 -c "
+          import json, re
+          try:
+              with open('pylint_report.json') as f:
+                  data = json.load(f)
+              if isinstance(data, dict) and 'score' in data:
+                  print(f'{data[\"score\"]:.2f}')
+              else:
+                  with open('pylint_output.txt') as f:
+                      m = re.search(r'Your code has been rated at ([\\d.]+)/10', f.read())
+                      print(m.group(1) if m else '0')
+          except:
+              print('0')
+          ")
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
-          python - <<PY
-          import sys, os
-          sys.exit(0 if float(os.environ['SCORE']) >= 9.0 else 1)
-          PY
+          python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
 
       # - name: ✅ Executar testes
       #   run: pytest --cov=. --cov-report=xml --cov-report=term-missing
