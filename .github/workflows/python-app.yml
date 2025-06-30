@@ -83,24 +83,20 @@ jobs:
           echo "## Resumo do Lint"
 
           echo "### Flake8 - Erros críticos"
-          CRIT_COUNT=$(flake8 . --count --select=E9,F63,F7,F82 || true | grep -Eo '^[0-9]+' | head -1)
-          CRIT_COUNT=${CRIT_COUNT:-0}
-          if [ "$CRIT_COUNT" -gt 0 ]; then
-            echo "❌ Foram encontrados $CRIT_COUNT erros críticos"
-            flake8 . --select=E9,F63,F7,F82 --show-source || true
-          else
+          ERROS_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics)
+          if [ -z "$ERROS_CRITICOS" ]; then
             echo "✅ Nenhum erro crítico encontrado"
+          else
+            echo "❌ Foram encontrados $CRIT_COUNT erros críticos"
           fi
 
           echo ""
           echo "### Flake8 - Outros problemas de estilo e complexidade"
-          STYLE_COUNT=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 || true | grep -Eo '^[0-9]+' | head -1)
-          STYLE_COUNT=${STYLE_COUNT:-0}
-          if [ "$STYLE_COUNT" -gt 0 ]; then
-            echo "❌ Foram encontrados $STYLE_COUNT problemas de estilo"
-            flake8 . --max-complexity=10 --max-line-length=127 || true
-          else
+          OUTROS_PROBLEMAS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics)
+          if [ -z "$OUTROS_PROBLEMAS" ]; then
             echo "✅ Nenhum problema de estilo encontrado"
+          else
+           echo "❌ Foram encontrados $OUTROS_PROBLEMAS problemas"
           fi
 
           echo ""
