@@ -51,31 +51,56 @@ jobs:
           echo " - C0412: Imports do mesmo pacote fora de ordem"
           echo " - R0903: Classe muito simples"
           echo " - C0301: Linha muito longa"
-
+          
+          echo ""
+          echo "Iniciando análise com Pylint..."
           pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 \
                   --output-format=text:pylint_output.txt --exit-zero
-
-          SCORE=$(python3 -c "
           
+          echo ""
+          echo "Análise finalizada. Extraindo nota..."
+          
+          SCORE=$(python3 -c "
           import re
           with open('pylint_output.txt') as f:
               text = f.read()
           m = re.search(r'Your code has been rated at ([\\d.]+)/10', text)
           print(m.group(1) if m else '0')
           ")
-
+          
+          echo "Nota extraída do Pylint: $SCORE/10"
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
-          python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
+          
+          if (( $(echo "$SCORE >= 9.0" | bc -l) )); then
+            echo "✅ Score igual ou superior a 9.0. Passando na análise!"
+            exit 0
+          else
+            echo "❌ Score abaixo de 9.0. Falha na análise."
+            exit 1
+          fi
 
       - name: Análise de código com Flake8
         if: always()
         run: |
           echo "Executando Flake8 (apenas erros críticos):"
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
-
+          QTDE_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82)
+          echo "$QTDE_CRITICOS"
+          if [ "$QTDE_CRITICOS" = "0" ]; then
+            exit 0
+          fi
+          
+          flake8 . --select=E9,F63,F7,F82 --show-source --statistics
+          
           echo ""
           echo "Executando Flake8 (verificação completa de estilo e complexidade):"
-          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics || true
+          QTDE_OUTROS=$(flake8 . --count --max-complexity=10 --max-line-length=127)
+          echo "$QTDE_OUTROS"
+          if [ "$QTDE_OUTROS" = "0" ]; then
+            exit 0
+          fi
+          
+          flake8 . --max-complexity=10 --max-line-length=127 --statistics
+
 
       - name: Resumo do Lint
         if: always()
@@ -84,24 +109,31 @@ jobs:
 
           echo "### Flake8 - Erros críticos"
           ERROS_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics)
-          if [ -z "$ERROS_CRITICOS" ]; then
+          QTDE_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82)
+
+          if [ "$QTDE_CRITICOS" = "0" ]; then
             echo "✅ Nenhum erro crítico encontrado"
           else
             echo "❌ Foram encontrados $CRIT_COUNT erros críticos"
+            echo "$ERROS_CRITICOS"
           fi
 
           echo ""
           echo "### Flake8 - Outros problemas de estilo e complexidade"
           OUTROS_PROBLEMAS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics)
-          if [ -z "$OUTROS_PROBLEMAS" ]; then
+          QTDE_OUTROS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127)
+          
+          if [ "$QTDE_OUTROS" = "0" ]; then
             echo "✅ Nenhum problema de estilo encontrado"
           else
-           echo "❌ Foram encontrados $OUTROS_PROBLEMAS problemas"
+            echo "❌ Foram encontrados $QTDE_OUTROS problemas"
+            echo "$OUTROS_PROBLEMAS"
           fi
 
           echo ""
           echo "### Pylint"
           echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+
 
       - name: Resumo do Pylint
         if: always()
