@@ -37,18 +37,31 @@ jobs:
       - name: Instalar dependências
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pylint pytest pytest-cov
+          pip install flake8 flake8-json pylint pytest pytest-cov
           [ -f requirements.txt ] && pip install -r requirements.txt
 
       - name: Análise estática com Flake8
         run: |
+          echo "Executando Flake8 (apenas erros críticos):"
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+          echo ""
+          echo "Executando Flake8 (verificação completa de estilo e complexidade, salvando resultado em JSON):"
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 \
                    --statistics --format=json --output-file=flake8_report.json
 
       - name: Análise estática com Pylint
         id: pylint_check
         run: |
+          echo "Desabilitando códigos de verificação do Pylint:"
+          echo " - C0114: Docstring de módulo ausente (não exige docstring em todos os arquivos)"
+          echo " - C0115: Docstring de classe ausente (não exige docstring para toda classe)"
+          echo " - C0116: Docstring de função/método ausente (não força documentação em todas funções/métodos)"
+          echo " - C0411: Import externo deve vir antes (desativa ordem de imports, útil para scripts)"
+          echo " - C0412: Imports do mesmo pacote fora de ordem (não exige agrupamento de imports)"
+          echo " - R0903: Classe muito simples (permite classes utilitárias, mesmo com poucos métodos)"
+          echo " - C0301: Linha muito longa (aceita linhas mais longas quando necessário, sem exigir quebra)"
+
           pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 \
                   --output-format=json:pylint_report.json,text:pylint_output.txt --exit-zero
           SCORE=$(python3 -c "
@@ -81,7 +94,7 @@ jobs:
       - name: Resumo da análise de código
         if: always()
         run: |
-          echo "## 📊 Lint Summary"
+          echo "## Resumo do Lint"
           echo "### Flake8"
           if [ -f flake8_report.json ]; then
             python3 -c "
@@ -90,22 +103,22 @@ jobs:
               with open('flake8_report.json') as f:
                   data = json.load(f)
               if data:
-                  print(f'Found {len(data)} style issues')
+                  print(f'❌ Foram encontrados {len(data)} problemas de estilo')
                   for issue in data[:5]:
                       print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
                   if len(data) > 5:
-                      print(f'  ... and {len(data) - 5} more issues')
+                      print(f'  ... e mais {len(data) - 5} problemas')
               else:
-                  print('✅ No style issues found')
+                  print('✅ Nenhum problema de estilo encontrado')
           except Exception as e:
-              print(f'Could not parse flake8 results: {e}')
+              print(f'Não foi possível analisar os resultados do flake8: {e}')
           "
           else
-            echo "No flake8 report found"
+            echo "Relatório do flake8 não encontrado"
           fi
           echo "### Pylint"
-          echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
-          [ -f pylint_output.txt ] && echo "Full report in pylint_output.txt"
+          echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+          [ -f pylint_output.txt ] && echo "Relatório completo em pylint_output.txt"
 
       - name: Enviar relatórios como artefato
         if: always()
@@ -119,7 +132,7 @@ jobs:
             coverage.xml
           retention-days: 30
 
-  auto-pr:
+  auto-pull-request:
     name: Criar/Atualizar Pull Request
     needs: quality-check
     if: |
@@ -151,8 +164,8 @@ jobs:
             const pr = await github.rest.pulls.create({
               owner, repo,
               head, base: 'develop',
-              title: `🚀 Auto PR: ${head}`,
-              body: 'CI finalizado com sucesso. PR gerado automaticamente para revisão',
+              title: `PR gerado automaticamente: ${head} -> develop`,
+              body: '',
               draft: false
             });
             core.notice(`PR criado: #${pr.data.number}`);
