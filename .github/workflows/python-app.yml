@@ -76,34 +76,38 @@ jobs:
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
           python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
 
-      - name: Resumo da análise de código
+      - name: Análise de código
+        if: always()
+        run: |
+          echo "Executando Flake8 (apenas erros críticos):"
+          flake8 . --select=E9,F63,F7,F82 --show-source --statistics || true
+
+          echo ""
+          echo "Executando Flake8 (verificação completa de estilo e complexidade):"
+          flake8 . --max-complexity=10 --max-line-length=127 --statistics || true
+
+      - name: Resumo do Lint
         if: always()
         run: |
           echo "## Resumo do Lint"
-          echo "### Flake8"
 
-          # Conta erros críticos
-          CRIT_ERRORS=$(flake8 . --count --select=E9,F63,F7,F82 || true)
-          CRIT_COUNT=$(echo "$CRIT_ERRORS" | grep -Eo '^[0-9]+' | head -1)
+          echo "### Flake8 - Erros críticos"
+          CRIT_COUNT=$(flake8 . --count --select=E9,F63,F7,F82 || true | grep -Eo '^[0-9]+' | head -1)
           CRIT_COUNT=${CRIT_COUNT:-0}
+          if [ "$CRIT_COUNT" -gt 0 ]; then
+            echo "❌ Foram encontrados $CRIT_COUNT erros críticos"
+            flake8 . --select=E9,F63,F7,F82 --show-source || true
+          else
+            echo "✅ Nenhum erro crítico encontrado"
+          fi
 
-          # Conta total de problemas (completo)
-          TOTAL_ERRORS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 || true)
-          TOTAL_COUNT=$(echo "$TOTAL_ERRORS" | grep -Eo '^[0-9]+' | head -1)
-          TOTAL_COUNT=${TOTAL_COUNT:-0}
-
-          if [ "$TOTAL_COUNT" -gt 0 ]; then
-            echo "❌ Foram encontrados $TOTAL_COUNT problemas de estilo"
-
-            # Exibe até 5 problemas
-            flake8 . --max-line-length=127 --max-complexity=10 | head -n 5 | while read -r line; do
-              echo "  - $line"
-            done
-
-            if [ "$TOTAL_COUNT" -gt 5 ]; then
-              REMAINDER=$((TOTAL_COUNT - 5))
-              echo "  ... e mais $REMAINDER problemas"
-            fi
+          echo ""
+          echo "### Flake8 - Outros problemas de estilo e complexidade"
+          STYLE_COUNT=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 || true | grep -Eo '^[0-9]+' | head -1)
+          STYLE_COUNT=${STYLE_COUNT:-0}
+          if [ "$STYLE_COUNT" -gt 0 ]; then
+            echo "❌ Foram encontrados $STYLE_COUNT problemas de estilo"
+            flake8 . --max-complexity=10 --max-line-length=127 || true
           else
             echo "✅ Nenhum problema de estilo encontrado"
           fi
@@ -111,8 +115,12 @@ jobs:
           echo ""
           echo "### Pylint"
           echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
-          echo "Últimas 10 linhas do relatório pylint:"
-          tail -n 10 pylint_output.txt || echo "Relatório pylint não encontrado"
+
+      - name: Resumo do Pylint
+        if: always()
+        run: |
+          echo "Relatório completo do Pylint:"
+          cat pylint_output.txt || echo "Relatório pylint não encontrado"
 
   auto-pull-request:
     name: Criar/Atualizar Pull Request
