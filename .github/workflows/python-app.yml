@@ -1,109 +1,100 @@
-name: Python CI
+name: CI · Build · Lint · Auto‑PR      # título curto e já descreve tudo
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write        # necessário para commits/artefatos
+  pull-requests: write   # necessário para abrir / atualizar PR
 
 on:
   push:
-    branches:
-      - 'feature/**'
+    branches: [ 'feature/**' ]           # CI + Auto‑PR em pushes para feature/*
+  pull_request:
+    branches: [ develop ]                # roda qualidade também para PRs manuais
+  workflow_dispatch: { }                # gatilho manual opcional
+
+concurrency: # evita fila de execuções antigas
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  quality-check:
+    name: Verificações de Qualidade (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        python-version: [ "3.11" ]
+        python-version: [ '3.11' ]
+      fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Baixar código
+        uses: actions/checkout@v4
 
-      - name: Setup Python ${{ matrix.python-version }}
+      - name: Configurar Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install dependencies
+      - name: Instalar dependências
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pylint pytest pytest-cov
           [ -f requirements.txt ] && pip install -r requirements.txt
 
-      - name: Lint with flake8
+      - name: Análise estática com Flake8
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 \
-                  --statistics --format=json --output-file=flake8_report.json
+                   --statistics --format=json --output-file=flake8_report.json
 
-      - name: Run pylint
+      - name: Análise estática com Pylint
         id: pylint_check
         run: |
           pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 \
                   --output-format=json:pylint_report.json,text:pylint_output.txt --exit-zero
 
-          SCORE=$(python3 -c "
-          import json, re
-          try:
-              with open('pylint_report.json') as f:
-                  data = json.load(f)
-              if isinstance(data, dict) and 'score' in data:
-                  print(f'{data[\"score\"]:.2f}')
-              else:
-                  with open('pylint_output.txt') as f:
-                      m = re.search(r'Your code has been rated at ([\\d.]+)/10', f.read())
-                      print(m.group(1) if m else '0')
-          except:
-              print('0')
-          ")
-
+          SCORE=$(python - <<'PY'
+          import json, re, sys, pathlib as p
+          score = 0
+          if p.Path('pylint_report.json').exists():
+              data = json.load(open('pylint_report.json'))
+              score = data.get("score", 0) if isinstance(data, dict) else 0
+          else:
+              m = re.search(r'Your code has been rated at ([\d.]+)/10',
+                            open('pylint_output.txt').read())
+              score = float(m.group(1)) if m else 0
+          print(f"{score:.2f}")
+          PY
+          )
           echo "pylint_score=$SCORE" >> $GITHUB_OUTPUT
-          python3 -c "exit(0) if float('$SCORE') >= 9.0 else exit(1)"
+          python - <<PY
+          import sys, os
+          sys.exit(0 if float(os.environ['SCORE']) >= 9.0 else 1)
+          PY
 
-      # - name: Test with pytest
+      # - name: ✅ Executar testes
       #   run: pytest --cov=. --cov-report=xml --cov-report=term-missing
 
-      #      - name: Upload coverage to Codecov
-      #        if: matrix.python-version == '3.11'
-      #        uses: codecov/codecov-action@v4
-      #        with:
-      #          file: ./coverage.xml
-      #          fail_ci_if_error: false
+      # - name: ☁️ Enviar cobertura para Codecov
+      #   if: ${{ matrix.python-version == '3.11' && hashFiles('coverage.xml') != '' }}
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     file: ./coverage.xml
+      #     fail_ci_if_error: false
 
-      - name: Display lint summary
+      - name: Resumo da análise de código
         if: always()
         run: |
-          echo "## 📊 Lint Summary"
+          echo "## Resumo de Análises"
+          echo "### Flake8"; test -f flake8_report.json && \
+            python - <<'PY'
+          import json, itertools, sys; d=json.load(open('flake8_report.json')); 
+          print("✅ Nenhum problema encontrado" if not d else f"Found {len(d)} issues"); 
+          [print(f"  - {i['filename']}:{i['line_number']} {i['code']} {i['text']}") 
+            for i in itertools.islice(d,5)]
+          PY
+          echo "### Pylint"; echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
 
-          echo "### Flake8"
-          if [ -f flake8_report.json ]; then
-            python3 -c "
-          import json
-          try:
-              with open('flake8_report.json') as f:
-                  data = json.load(f)
-              if data:
-                  print(f'Found {len(data)} style issues')
-                  for issue in data[:5]:
-                      print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
-                  if len(data) > 5:
-                      print(f'  ... and {len(data) - 5} more issues')
-              else:
-                  print('✅ No style issues found')
-          except Exception as e:
-              print(f'Could not parse flake8 results: {e}')
-          "
-          else
-            echo "No flake8 report found"
-          fi
-
-          echo "### Pylint"
-          echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
-          [ -f pylint_output.txt ] && echo "Full report in pylint_output.txt"
-
-      - name: Upload lint reports
+      - name: Enviar relatórios como artefato
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -115,38 +106,40 @@ jobs:
             coverage.xml
           retention-days: 30
 
-  create-pull-request:
-    needs: build
-    if: >
+  auto-pr:
+    name: Criar/Atualizar Pull Request
+    needs: quality-check
+    if: |
       github.event_name == 'push' &&
       startsWith(github.ref, 'refs/heads/feature/') &&
-      needs.build.result == 'success'
+      needs.quality-check.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
+
     steps:
-      - name: Create or update PR towards develop
+      - name: Criar ou atualizar PR automaticamente
         uses: actions/github-script@v7
         with:
           script: |
             const {owner, repo} = context.repo;
-            const head = context.ref.replace('refs/heads/', '');
-            const prs = await github.rest.pulls.list({
+            const head = context.ref.replace('refs/heads/','');
+            const openPrs = await github.rest.pulls.list({
               owner, repo,
               head: `${owner}:${head}`,
               base: 'develop',
               state: 'open'
             });
-            if (prs.length) {
-              core.info(`PR #${prs[0].number} já existe ✅`);
-            } else {
-              const pr = await github.rest.pulls.create({
-                owner, repo,
-                head, base: 'develop',
-                title: `🚀 Auto PR: ${head}`,
-                body: 'CI passou ✅ – pronto para revisão 🙂',
-                draft: false
-              });
-              core.info(`PR criado: #${pr.data.number}`);
+            if (openPrs.data.length) {
+              core.notice(`PR #${openPrs.data[0].number} já existe ✅`);
+              return;
             }
+            const pr = await github.rest.pulls.create({
+              owner, repo,
+              head, base: 'develop',
+              title: `🚀 Auto PR: ${head}`,
+              body: 'CI finalizado com sucesso. PR gerado automaticamente para revisão',
+              draft: false
+            });
+            core.notice(`PR criado: #${pr.data.number}`);
