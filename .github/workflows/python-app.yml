@@ -81,15 +81,31 @@ jobs:
       - name: Resumo da análise de código
         if: always()
         run: |
-          echo "## Resumo de Análises"
-          echo "### Flake8"; test -f flake8_report.json && \
-            python - <<'PY'
-          import json, itertools, sys; d=json.load(open('flake8_report.json')); 
-          print("✅ Nenhum problema encontrado" if not d else f"Found {len(d)} issues"); 
-          [print(f"  - {i['filename']}:{i['line_number']} {i['code']} {i['text']}") 
-            for i in itertools.islice(d,5)]
-          PY
-          echo "### Pylint"; echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+          echo "## 📊 Lint Summary"
+          echo "### Flake8"
+          if [ -f flake8_report.json ]; then
+            python3 -c "
+          import json
+          try:
+              with open('flake8_report.json') as f:
+                  data = json.load(f)
+              if data:
+                  print(f'Found {len(data)} style issues')
+                  for issue in data[:5]:
+                      print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} {issue[\"code\"]}: {issue[\"text\"]}')
+                  if len(data) > 5:
+                      print(f'  ... and {len(data) - 5} more issues')
+              else:
+                  print('✅ No style issues found')
+          except Exception as e:
+              print(f'Could not parse flake8 results: {e}')
+          "
+          else
+            echo "No flake8 report found"
+          fi
+          echo "### Pylint"
+          echo "Score: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+          [ -f pylint_output.txt ] && echo "Full report in pylint_output.txt"
 
       - name: Enviar relatórios como artefato
         if: always()
