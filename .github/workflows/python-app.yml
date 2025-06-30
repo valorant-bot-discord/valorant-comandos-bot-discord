@@ -41,7 +41,7 @@ jobs:
           [ -f requirements.txt ] && pip install -r requirements.txt
 
       - name: Análise estática com Pylint
-        id: pylint_check
+        if: always()
         run: |
           echo "Desabilitando códigos de verificação do Pylint:"
           echo " - C0114: Docstring de módulo ausente"
@@ -82,54 +82,86 @@ jobs:
       - name: Análise de código com Flake8
         if: always()
         run: |
-          echo "Executando Flake8 (apenas erros críticos):"
-          QTDE_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82)
-          echo "$QTDE_CRITICOS"
-          if [ "$QTDE_CRITICOS" = "0" ]; then
-            exit 0
-          fi
-          
-          flake8 . --select=E9,F63,F7,F82 --show-source --statistics
+          echo "Desabilitando regras específicas para análise crítica:"
+          echo " - E9: Erros de sintaxe"
+          echo " - F63, F7, F82: Erros de nomes indefinidos, etc"
           
           echo ""
-          echo "Executando Flake8 (verificação completa de estilo e complexidade):"
-          QTDE_OUTROS=$(flake8 . --count --max-complexity=10 --max-line-length=127)
-          echo "$QTDE_OUTROS"
-          if [ "$QTDE_OUTROS" = "0" ]; then
-            exit 0
-          fi
+          echo "Iniciando análise crítica com Flake8 (E9, F63, F7, F82)..."
+          flake8 . --select=E9,F63,F7,F82 --show-source --statistics --count | tee flake8_critical.txt
+          STATUS_CRITICOS=${PIPESTATUS[0]}
           
-          flake8 . --max-complexity=10 --max-line-length=127 --statistics
+          echo ""
+          echo "Análise crítica finalizada. Verifique o arquivo flake8_critical.txt."
+          
+          CRITICAL_ERRORS=$(cat flake8_critical.txt | grep -v "^$")
+          QTD_CRITICOS=$(cat flake8_critical.txt | grep -c "^[^ ]")
+          echo "Erros críticos encontrados: $QTD_CRITICOS"
+          
+          echo ""
+          echo "Iniciando análise geral de estilo/complexidade com Flake8 (complexidade <= 10, linha <= 127)..."
+          flake8 . --max-complexity=10 --max-line-length=127 --statistics --count | tee flake8_all.txt
+          STATUS_OUTROS=${PIPESTATUS[0]}
+          
+          echo ""
+          echo "Análise de estilo finalizada. Verifique o arquivo flake8_all.txt."
+          
+          OTHER_ERRORS=$(cat flake8_all.txt | grep -v "^$")
+          QTD_OUTROS=$(cat flake8_all.txt | grep -c "^[^ ]")
+          echo "Problemas de estilo/complexidade encontrados: $QTD_OUTROS"
+          
+          echo ""
+          echo "Resumo Flake8:"
+          echo " - Erros críticos: $QTD_CRITICOS"
+          echo " - Outros problemas: $QTD_OUTROS"
+          
+          if [ "$QTD_CRITICOS" = "0" ] && [ "$QTD_OUTROS" = "0" ]; then
+            echo "✅ Nenhum erro Flake8 encontrado. Passando na análise!"
+            exit 0
+          elif [ "$QTD_CRITICOS" = "0" ]; then
+            echo "⚠️ Foram encontrados $QTD_OUTROS problemas de estilo/complexidade. Recomenda-se revisão."
+            exit 0
+          else
+            echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8."
+            exit 1
+          fi
 
 
       - name: Resumo do Lint
         if: always()
         run: |
           echo "## Resumo do Lint"
-
+          echo ""
+          
           echo "### Flake8 - Erros críticos"
-          ERROS_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics)
+          ERROS_CRITICOS=$(flake8 . --select=E9,F63,F7,F82 --show-source)
           QTDE_CRITICOS=$(flake8 . --count --select=E9,F63,F7,F82)
-
+          
           if [ "$QTDE_CRITICOS" = "0" ]; then
             echo "✅ Nenhum erro crítico encontrado"
           else
-            echo "❌ Foram encontrados $CRIT_COUNT erros críticos"
+            echo "❌ Foram encontrados $QTDE_CRITICOS erros críticos:"
             echo "$ERROS_CRITICOS"
+            echo ""
+            echo "----"
+            flake8 . --select=E9,F63,F7,F82 --statistics
           fi
-
+          
           echo ""
           echo "### Flake8 - Outros problemas de estilo e complexidade"
-          OUTROS_PROBLEMAS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics)
-          QTDE_OUTROS=$(flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127)
+          ERROS_OUTROS=$(flake8 . --max-complexity=10 --max-line-length=127)
+          QTDE_OUTROS=$(flake8 . --count --max-complexity=10 --max-line-length=127)
           
           if [ "$QTDE_OUTROS" = "0" ]; then
-            echo "✅ Nenhum problema de estilo encontrado"
+            echo "✅ Nenhum problema de estilo/complexidade encontrado"
           else
-            echo "❌ Foram encontrados $QTDE_OUTROS problemas"
-            echo "$OUTROS_PROBLEMAS"
+            echo "❌ Foram encontrados $QTDE_OUTROS problemas:"
+            echo "$ERROS_OUTROS"
+            echo ""
+            echo "----"
+            flake8 . --max-complexity=10 --max-line-length=127 --statistics
           fi
-
+          
           echo ""
           echo "### Pylint"
           echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
