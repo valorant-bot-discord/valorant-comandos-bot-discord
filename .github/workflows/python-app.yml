@@ -48,7 +48,7 @@ jobs:
           echo ""
           echo "Executando Flake8 (verificação completa de estilo e complexidade, salvando resultado em JSON):"
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 \
-                   --statistics --format=json --output-file=flake8_report.json
+          --statistics --format=default | jq -R -s -c 'split("\n")[:-1] | map({text: .})' > flake8_report.json
 
       - name: Análise estática com Pylint
         id: pylint_check
