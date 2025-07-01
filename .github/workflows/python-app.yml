@@ -89,7 +89,7 @@ jobs:
           flake8 . --select=E9,F63,F7,F82 --statistics --count > flake8_critical.txt 2>&1
           STATUS_CRITICOS=$?
           
-          QTD_CRITICOS=$(grep -c "^\./" flake8_critical.txt || echo 0)
+          QTD_CRITICOS=$(grep -c "^\./" flake8_critical.txt 2>/dev/null || echo 0)
           
           echo "Análise crítica finalizada."
           echo "Erros críticos encontrados: $QTD_CRITICOS"
@@ -99,7 +99,7 @@ jobs:
           flake8 . --ignore E302 --max-complexity=10 --max-line-length=127 --statistics --count > flake8_all.txt 2>&1
           STATUS_OUTROS=$?
 
-          QTD_OUTROS=$(grep -c "^\./" flake8_all.txt || echo 0)
+          QTD_OUTROS=$(grep -c "^\./" flake8_all.txt 2>/dev/null || echo 0)
           
           echo "Análise de estilo finalizada."
           echo "Problemas de estilo/complexidade encontrados: $QTD_OUTROS"
@@ -109,10 +109,10 @@ jobs:
           echo " - Erros críticos: $QTD_CRITICOS"
           echo " - Outros problemas: $QTD_OUTROS"
 
-          if [ "$QTD_CRITICOS" = "0" ] && [ "$QTD_OUTROS" = "0" ]; then
+          if [ "$QTD_CRITICOS" -eq 0 ] && [ "$QTD_OUTROS" -eq 0 ]; then
             echo "✅ Nenhum erro Flake8 encontrado. Passando na análise!"
             exit 0
-          elif [ "$QTD_CRITICOS" = "0" ]; then
+          elif [ "$QTD_CRITICOS" -eq 0 ]; then
             echo "⚠️ Foram encontrados $QTD_OUTROS problemas de estilo/complexidade. Recomenda-se revisão."
             exit 0
           else
@@ -129,12 +129,12 @@ jobs:
           
           # Verifica se o arquivo existe e conta erros críticos corretamente
           if [ -f "flake8_critical.txt" ]; then
-            QTDE_CRITICOS=$(grep -c "^\./" flake8_critical.txt || echo 0)
+            QTDE_CRITICOS=$(grep -c "^\./" flake8_critical.txt 2>/dev/null || echo 0)
           else
             QTDE_CRITICOS=0
           fi
           
-          if [ "$QTDE_CRITICOS" = "0" ]; then
+          if [ "$QTDE_CRITICOS" -eq 0 ]; then
             echo "✅ Nenhum erro crítico encontrado"
           else
             echo "❌ Foram encontrados $QTDE_CRITICOS erros críticos:"
@@ -146,12 +146,12 @@ jobs:
           
           # Verifica se o arquivo existe e conta outros problemas corretamente
           if [ -f "flake8_all.txt" ]; then
-            QTDE_OUTROS=$(grep -c "^\./" flake8_all.txt || echo 0)
+            QTDE_OUTROS=$(grep -c "^\./" flake8_all.txt 2>/dev/null || echo 0)
           else
             QTDE_OUTROS=0
           fi
           
-          if [ "$QTDE_OUTROS" = "0" ]; then
+          if [ "$QTDE_OUTROS" -eq 0 ]; then
             echo "✅ Nenhum problema de estilo/complexidade encontrado"
           else
             echo "❌ Foram encontrados $QTDE_OUTROS problemas:"
