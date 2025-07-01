@@ -88,11 +88,6 @@ jobs:
           
           flake8 . --select=E9,F63,F7,F82 --statistics --count > flake8_critical.txt 2>&1 || true
           
-          critical_errors = count_errors('flake8_critical.txt')
-          other_errors = count_errors('flake8_all.txt')
-          
-          print(f'Erros críticos encontrados: {critical_errors}')
-          
           echo ""
           echo "Iniciando análise geral de estilo/complexidade com Flake8..."
           flake8 . --ignore E302 --max-complexity=10 --max-line-length=127 --statistics --count > flake8_all.txt 2>&1 || true
@@ -108,6 +103,10 @@ jobs:
                   lines = f.readlines()
               return sum(1 for line in lines if line.strip().startswith('./'))
           
+          critical_errors = count_errors('flake8_critical.txt')
+          other_errors = count_errors('flake8_all.txt')
+          
+          print(f'Erros críticos encontrados: {critical_errors}')
           print(f'Problemas de estilo/complexidade encontrados: {other_errors}')
           print(f'')
           print(f'Resumo Flake8:')
