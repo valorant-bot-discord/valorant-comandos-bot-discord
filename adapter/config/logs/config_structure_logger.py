@@ -36,10 +36,7 @@ class ConfigStructureLogger:
                     print(f"Erro ao configurar o FileHandler: {e}")
 
     def info(self, *, code: str, message: str):
-        try:
-            self.logger._log(logging.INFO, msg=message, args=(), extra={"code": code})
-        except Exception as ex:
-            self._railway_fallback_log("INFO", code, message, ex)
+        self.logger._log(logging.INFO, msg=message, args=(), extra={"code": code})
 
     def warning(self, *, code: str, message: str):
         self.logger._log(logging.WARNING, msg=message, args=(), extra={"code": code})
@@ -49,15 +46,3 @@ class ConfigStructureLogger:
 
     def critical(self, *, code: str, message: str = None, throw: Exception = None):
         self.logger._log(logging.CRITICAL, msg=message, args=(), extra={"code": code, "throw": throw})
-
-    @staticmethod
-    def _railway_fallback_log(level_name, code, message, error=None):
-        fallback_msg = {
-            "ApplicationName": "fallback",
-            "Code": code or "sem-codigo",
-            "Message": message or "(sem mensagem)",
-            "Severity": level_name,
-        }
-        if error:
-            fallback_msg["Error"] = str(error)
-        print(f"[RAILWAY-FALLBACK] {fallback_msg}", flush=True)
