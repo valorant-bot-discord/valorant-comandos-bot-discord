@@ -1,0 +1,209 @@
+name: CI · Build · Lint · Auto‑PR
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ 'feature/**' ]
+  workflow_dispatch: { }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-check:
+    name: Verificações de Qualidade (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.11' ]
+      fail-fast: false
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pylint pytest pytest-cov
+          [ -f requirements.txt ] && pip install -r requirements.txt
+
+      - name: Análise estática com Pylint
+        id: pylint_check
+        run: |
+          echo "Desabilitando códigos de verificação do Pylint:"
+          echo " - C0114: Docstring de módulo ausente"
+          echo " - C0115: Docstring de classe ausente"
+          echo " - C0116: Docstring de função/método ausente"
+          echo " - C0411: Import externo deve vir antes"
+          echo " - C0412: Imports do mesmo pacote fora de ordem"
+          echo " - R0903: Classe muito simples"
+          echo " - C0301: Linha muito longa"
+          
+          echo ""
+          echo "Iniciando análise com Pylint..."
+          pylint . --disable=C0114,C0115,C0116,C0411,C0412,R0903,C0301 --output-format=text:pylint_output.txt --exit-zero
+          
+          echo ""
+          echo "Análise finalizada. Extraindo nota..."
+          
+          python3 -c "
+          import re
+          import sys
+          
+          with open('pylint_output.txt') as f:
+              text = f.read()
+          
+          m = re.search(r'Your code has been rated at ([\\d.]+)/10', text)
+          score = float(m.group(1)) if m else 0.0
+          
+          print(f'Nota extraída do Pylint: {score}/10')
+          
+          with open('$GITHUB_OUTPUT', 'a') as f:
+              f.write(f'pylint_score={score}\\n')
+          
+          if score >= 9.0:
+              print('✅ Score igual ou superior a 9.0. Passando na análise!')
+              sys.exit(0)
+          else:
+              print('❌ Score abaixo de 9.0. Falha na análise.')
+              sys.exit(1)
+          "
+
+      - name: Análise de código com Flake8
+        run: |
+          echo "Iniciando análise crítica com Flake8"
+          
+          flake8 . --select=E9,F63,F7,F82 --statistics --count > flake8_critical.txt 2>&1 || true
+          
+          echo ""
+          echo "Iniciando análise geral de estilo/complexidade com Flake8..."
+          flake8 . --ignore E302 --max-complexity=10 --max-line-length=127 --statistics --count > flake8_all.txt 2>&1 || true
+          
+          python3 -c "
+          import os
+          import sys
+          
+          def count_errors(filename):
+              if not os.path.exists(filename):
+                  return 0
+              with open(filename, 'r') as f:
+                  lines = f.readlines()
+              return sum(1 for line in lines if line.strip().startswith('./'))
+          
+          critical_errors = count_errors('flake8_critical.txt')
+          other_errors = count_errors('flake8_all.txt')
+          
+          print(f'Erros críticos encontrados: {critical_errors}')
+          print(f'Problemas de estilo/complexidade encontrados: {other_errors}')
+          print(f'')
+          print(f'Resumo Flake8:')
+          print(f' - Erros críticos: {critical_errors}')
+          print(f' - Outros problemas: {other_errors}')
+          
+          if critical_errors == 0 and other_errors == 0:
+              print('✅ Nenhum erro Flake8 encontrado. Passando na análise!')
+              sys.exit(0)
+          elif critical_errors == 0:
+              print(f'⚠️ Foram encontrados {other_errors} problemas de estilo/complexidade. Recomenda-se revisão.')
+              sys.exit(0)
+          else:
+              print(f'❌ Foram encontrados {critical_errors} erros críticos pelo Flake8. Veja abaixo:')
+              if os.path.exists('flake8_critical.txt'):
+                  with open('flake8_critical.txt', 'r') as f:
+                      for line in f:
+                          if line.strip().startswith('./'):
+                              print(line.strip())
+              sys.exit(1)
+          "
+
+      - name: Resumo do Lint
+        if: always()
+        run: |
+          python3 -c "
+          import os
+          
+          def count_and_show_errors(filename, error_type):
+              if not os.path.exists(filename):
+                  return 0
+          
+              errors = []
+              with open(filename, 'r') as f:
+                  for line in f:
+                      if line.strip().startswith('./'):
+                          errors.append(line.strip())
+          
+              count = len(errors)
+              if count == 0:
+                  print(f'✅ Nenhum {error_type} encontrado')
+              else:
+                  print(f'❌ Foram encontrados {count} {error_type}:')
+                  for error in errors:
+                      print(error)
+          
+              return count
+          
+          critical_count = count_and_show_errors('flake8_critical.txt', 'erro crítico')
+          
+          print('')
+          
+          other_count = count_and_show_errors('flake8_all.txt', 'problema')
+          "
+          
+          echo ""
+          echo "### Pylint"
+          echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
+
+      - name: Resumo do Pylint
+        if: always()
+        run: |
+          echo "Relatório completo do Pylint:"
+          cat pylint_output.txt || echo "Relatório pylint não encontrado"
+
+  auto-pull-request:
+    name: Criar/Atualizar Pull Request
+    needs: quality-check
+    if: |
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/heads/feature/') &&
+      needs.quality-check.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Criar ou atualizar PR automaticamente
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const head = context.ref.replace('refs/heads/','');
+            const openPrs = await github.rest.pulls.list({
+              owner, repo,
+              head: `${owner}:${head}`,
+              base: 'develop',
+              state: 'open'
+            });
+            if (openPrs.data.length) {
+              core.notice(`PR #${openPrs.data[0].number} já existe ✅`);
+              return;
+            }
+            const pr = await github.rest.pulls.create({
+              owner, repo,
+              head, base: 'develop',
+              title: `PR gerado automaticamente: ${head} -> develop`,
+              body: '',
+              draft: false
+            });
+            core.notice(`PR criado: #${pr.data.number}`);
