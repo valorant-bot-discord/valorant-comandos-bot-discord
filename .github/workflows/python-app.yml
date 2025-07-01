@@ -41,7 +41,8 @@ jobs:
           [ -f requirements.txt ] && pip install -r requirements.txt
 
       - name: Análise estática com Pylint
-        if: always()
+        id: pylint_check
+        shell: bash
         run: |
           echo "Desabilitando códigos de verificação do Pylint:"
           echo " - C0114: Docstring de módulo ausente"
@@ -80,13 +81,13 @@ jobs:
           fi
 
       - name: Análise de código com Flake8
-        if: always()
+        shell: bash
         run: |
           echo ""
           echo "Iniciando análise crítica com Flake8 (E9, F63, F7, F82)..."
-          flake8 . --select=E9,F63,F7,F82 --show-source --statistics --count | tee flake8_critical.txt
+          flake8 . --ignore E302 --select=E9,F63,F7,F82 --show-source --statistics --count | tee flake8_critical.txt
           STATUS_CRITICOS=${PIPESTATUS[0]}
-
+          
           echo ""
           echo "Análise crítica finalizada. Verifique o arquivo flake8_critical.txt."
 
@@ -123,10 +124,9 @@ jobs:
             exit 1
           fi
 
-
-
       - name: Resumo do Lint
         if: always()
+        shell: bash
         run: |
           echo "### Flake8 - Erros críticos"
           QTDE_CRITICOS=$(grep -c '^[^ ]' flake8_critical.txt || echo 0)
@@ -155,7 +155,6 @@ jobs:
           echo ""
           echo "### Pylint"
           echo "Nota final: ${{ steps.pylint_check.outputs.pylint_score }}/10"
-
 
       - name: Resumo do Pylint
         if: always()
