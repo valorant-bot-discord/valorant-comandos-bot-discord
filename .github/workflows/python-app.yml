@@ -85,26 +85,23 @@ jobs:
         run: |
           echo ""
           echo "Iniciando análise crítica com Flake8 (E9, F63, F7, F82)..."
-          flake8 . --ignore E302 --select=E9,F63,F7,F82 --show-source --statistics --count | tee flake8_critical.txt
-          STATUS_CRITICOS=${PIPESTATUS[0]}
           
-          echo ""
-          echo "Análise crítica finalizada. Verifique o arquivo flake8_critical.txt."
-
-          CRITICAL_ERRORS=$(cat flake8_critical.txt | grep -v "^$")
-          QTD_CRITICOS=$(cat flake8_critical.txt | grep -c "^[^ ]")
+          flake8 . --select=E9,F63,F7,F82 --statistics --count > flake8_critical.txt 2>&1
+          STATUS_CRITICOS=$?
+          
+          QTD_CRITICOS=$(grep -c "^\./" flake8_critical.txt || echo 0)
+          
+          echo "Análise crítica finalizada."
           echo "Erros críticos encontrados: $QTD_CRITICOS"
 
           echo ""
-          echo "Iniciando análise geral de estilo/complexidade com Flake8 (complexidade <= 10, linha <= 127)..."
-          flake8 . --max-complexity=10 --max-line-length=127 --statistics --count | tee flake8_all.txt
-          STATUS_OUTROS=${PIPESTATUS[0]}
+          echo "Iniciando análise geral de estilo/complexidade com Flake8..."
+          flake8 . --ignore E302 --max-complexity=10 --max-line-length=127 --statistics --count > flake8_all.txt 2>&1
+          STATUS_OUTROS=$?
 
-          echo ""
-          echo "Análise de estilo finalizada. Verifique o arquivo flake8_all.txt."
-
-          OTHER_ERRORS=$(cat flake8_all.txt | grep -v "^$")
-          QTD_OUTROS=$(cat flake8_all.txt | grep -c "^[^ ]")
+          QTD_OUTROS=$(grep -c "^\./" flake8_all.txt || echo 0)
+          
+          echo "Análise de estilo finalizada."
           echo "Problemas de estilo/complexidade encontrados: $QTD_OUTROS"
 
           echo ""
@@ -120,7 +117,7 @@ jobs:
             exit 0
           else
             echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8. Veja abaixo:"
-            cat flake8_critical.txt
+            grep "^\./" flake8_critical.txt || echo "Nenhum erro crítico específico encontrado"
             exit 1
           fi
 
@@ -129,27 +126,36 @@ jobs:
         shell: bash
         run: |
           echo "### Flake8 - Erros críticos"
-          QTDE_CRITICOS=$(grep -c '^[^ ]' flake8_critical.txt || echo 0)
+          
+          # Verifica se o arquivo existe e conta erros críticos corretamente
+          if [ -f "flake8_critical.txt" ]; then
+            QTDE_CRITICOS=$(grep -c "^\./" flake8_critical.txt || echo 0)
+          else
+            QTDE_CRITICOS=0
+          fi
+          
           if [ "$QTDE_CRITICOS" = "0" ]; then
             echo "✅ Nenhum erro crítico encontrado"
           else
             echo "❌ Foram encontrados $QTDE_CRITICOS erros críticos:"
-            cat flake8_critical.txt
+            grep "^\./" flake8_critical.txt
           fi
           
           echo ""
           echo "### Flake8 - Outros problemas de estilo e complexidade"
-          ERROS_OUTROS=$(flake8 . --max-complexity=10 --max-line-length=127)
-          QTDE_OUTROS=$(flake8 . --count --max-complexity=10 --max-line-length=127)
+          
+          # Verifica se o arquivo existe e conta outros problemas corretamente
+          if [ -f "flake8_all.txt" ]; then
+            QTDE_OUTROS=$(grep -c "^\./" flake8_all.txt || echo 0)
+          else
+            QTDE_OUTROS=0
+          fi
           
           if [ "$QTDE_OUTROS" = "0" ]; then
             echo "✅ Nenhum problema de estilo/complexidade encontrado"
           else
             echo "❌ Foram encontrados $QTDE_OUTROS problemas:"
-            echo "$ERROS_OUTROS"
-            echo ""
-            echo "----"
-            flake8 . --max-complexity=10 --max-line-length=127 --statistics
+            grep "^\./" flake8_all.txt
           fi
           
           echo ""
