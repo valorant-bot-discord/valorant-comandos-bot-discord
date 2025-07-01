@@ -1,3 +1,5 @@
+import sys
+
 from discord.ext.commands import Context
 
 from adapter.config.bot_config import create_bot
@@ -28,4 +30,8 @@ async def valorant(ctx: Context) -> None:
 
 
 if __name__ == "__main__":
-    bot.run(config.token_bot)
+    try:
+        bot.run(config.token_bot)
+    except Exception as ex:
+        logger.critical(code=LOG_CODE, message="Erro crítico na inicialização", throw=ex)
+        sys.exit(1)
