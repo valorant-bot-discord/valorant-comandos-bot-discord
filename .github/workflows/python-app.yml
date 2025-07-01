@@ -109,16 +109,16 @@ jobs:
           echo " - Erros críticos: $QTD_CRITICOS"
           echo " - Outros problemas: $QTD_OUTROS"
 
-          if [ "$QTD_CRITICOS" -eq 0 ] && [ "$QTD_OUTROS" -eq 0 ]; then
+          if [ "${QTD_CRITICOS:-0}" -eq 0 ] && [ "${QTD_OUTROS:-0}" -eq 0 ]; then
             echo "✅ Nenhum erro Flake8 encontrado. Passando na análise!"
             exit 0
-          elif [ "$QTD_CRITICOS" -eq 0 ]; then
-            echo "⚠️ Foram encontrados $QTD_OUTROS problemas de estilo/complexidade. Recomenda-se revisão."
-            exit 0
+          elif [ "${QTD_CRITICOS:-0}" -eq 0 ]; then
+              echo "⚠️ Foram encontrados $QTD_OUTROS problemas de estilo/complexidade. Recomenda-se revisão."
+              exit 0
           else
-            echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8. Veja abaixo:"
-            grep "^\./" flake8_critical.txt || echo "Nenhum erro crítico específico encontrado"
-            exit 1
+              echo "❌ Foram encontrados $QTD_CRITICOS erros críticos pelo Flake8. Veja abaixo:"
+              grep "^\./" flake8_critical.txt || echo "Nenhum erro crítico específico encontrado"
+              exit 1
           fi
 
       - name: Resumo do Lint
