@@ -84,10 +84,14 @@ jobs:
 
       - name: Análise de código com Flake8
         run: |
-          echo ""
-          echo "Iniciando análise crítica com Flake8 (E9, F63, F7, F82)..."
+          echo "Iniciando análise crítica com Flake8"
           
           flake8 . --select=E9,F63,F7,F82 --statistics --count > flake8_critical.txt 2>&1 || true
+          
+          critical_errors = count_errors('flake8_critical.txt')
+          other_errors = count_errors('flake8_all.txt')
+          
+          print(f'Erros críticos encontrados: {critical_errors}')
           
           echo ""
           echo "Iniciando análise geral de estilo/complexidade com Flake8..."
@@ -104,13 +108,6 @@ jobs:
                   lines = f.readlines()
               return sum(1 for line in lines if line.strip().startswith('./'))
           
-          critical_errors = count_errors('flake8_critical.txt')
-          other_errors = count_errors('flake8_all.txt')
-          
-          print(f'Análise crítica finalizada.')
-          print(f'Erros críticos encontrados: {critical_errors}')
-          print(f'')
-          print(f'Análise de estilo finalizada.')
           print(f'Problemas de estilo/complexidade encontrados: {other_errors}')
           print(f'')
           print(f'Resumo Flake8:')
@@ -136,8 +133,6 @@ jobs:
       - name: Resumo do Lint
         if: always()
         run: |
-          echo "### Flake8 - Erros críticos"
-          
           python3 -c "
           import os
           
@@ -164,7 +159,6 @@ jobs:
           critical_count = count_and_show_errors('flake8_critical.txt', 'erro crítico')
           
           print('')
-          print('### Flake8 - Outros problemas de estilo e complexidade')
           
           other_count = count_and_show_errors('flake8_all.txt', 'problema')
           "
