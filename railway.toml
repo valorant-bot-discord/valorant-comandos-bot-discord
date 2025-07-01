@@ -5,3 +5,7 @@ builder = "NIXPACKS"
 startCommand = "python -m application.main"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+[variables]
+PYTHONUNBUFFERED = "1"
+PYTHONIOENCODING = "utf-8"

@@ -22,6 +22,7 @@ class ConfigStructureLogger:
             if not any(isinstance(h, logging.StreamHandler) for h in self.logger.handlers):
                 console_handler = logging.StreamHandler(sys.stdout)
                 console_handler.setFormatter(CustomJsonFormatter())
+                console_handler.flush = True
                 self.logger.addHandler(console_handler)
 
             effective_log_to_file = getattr(self, '_log_to_file_arg', log_to_file)
