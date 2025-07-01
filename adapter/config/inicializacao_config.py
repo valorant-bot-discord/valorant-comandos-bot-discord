@@ -30,7 +30,7 @@ class BotConfig:
                 raise ErroCarregamentoEnvException(f"Arquivo .env não encontrado em: {dotenv_path}")
 
             load_dotenv(dotenv_path)
-        except ErroCarregamentoEnvException as ex:
+        except ErroCarregamentoEnvException:
             raise
         except Exception:
             raise
