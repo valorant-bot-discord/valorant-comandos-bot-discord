@@ -9,17 +9,15 @@ class BotConfig:
 
     def _carregar_variaveis(self):
         try:
-            self.TOKEN_BOT = os.getenv("TOKEN_BOT")
-            self.TOKEN_SERVER = os.getenv("TOKEN_SERVER")
-            self.APPLICATION_NAME = os.getenv("APPLICATION_NAME")
+            self.token_bot = os.getenv("TOKEN_BOT")
+            self.token_server = os.getenv("TOKEN_SERVER")
+            self.application_name = os.getenv("APPLICATION_NAME")
 
-            if not self.TOKEN_BOT:
+            if not self.token_bot:
                 raise TokenAusenteException("TOKEN_BOT")
-            if not self.TOKEN_SERVER:
+            if not self.token_server:
                 raise TokenAusenteException("TOKEN_SERVER")
 
-        except TokenAusenteException:
-            raise
         except Exception:
             raise
 
@@ -32,9 +30,9 @@ class BotConfig:
                 raise ErroCarregamentoEnvException(f"Arquivo .env não encontrado em: {dotenv_path}")
 
             load_dotenv(dotenv_path)
-        except ErroCarregamentoEnvException as ex:
+        except ErroCarregamentoEnvException:
             raise
-        except Exception as ex:
+        except Exception:
             raise
 
 

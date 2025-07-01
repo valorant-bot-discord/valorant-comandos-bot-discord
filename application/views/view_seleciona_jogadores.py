@@ -22,8 +22,8 @@ class ViewSelecionaJogadores(View):
         self.message = None
 
         for jogador in jogadores:
-            botao = Button(label=jogador.nome, style=ButtonStyle.grey, custom_id=str(jogador.id))
-            botao.callback = self.criar_callback(botao, jogador.id)
+            botao = Button(label=jogador.nome, style=ButtonStyle.grey, custom_id=str(jogador.id_role))
+            botao.callback = self.criar_callback(botao, jogador.id_role)
             self.add_item(botao)
 
         botao_sortear = Button(label="Sortear Agentes", style=ButtonStyle.blurple)

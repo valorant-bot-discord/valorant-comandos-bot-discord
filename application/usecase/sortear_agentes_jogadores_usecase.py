@@ -1,3 +1,4 @@
+from discord import DiscordException
 from discord.ext import commands
 
 from adapter.config.logs.config_structure_logger import ConfigStructureLogger
@@ -25,5 +26,8 @@ class SortearAgentesJogadoresUseCase(ComandosBase):
             view = ViewSelecionaJogadores(membros, self.ctx)
             message = await self.ctx.send("Selecione os jogadores:", view=view)
             view.message = message
+        except DiscordException as ex:
+            logger.error(code=LOG_CODE, message="Erro no Discord", throw=ex)
         except Exception as ex:
             logger.error(code=LOG_CODE, message="Erro inesperado", throw=ex)
+            raise

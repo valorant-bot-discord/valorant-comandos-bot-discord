@@ -10,16 +10,30 @@ class ConfigStructureLogger:
     def __new__(cls, *, log_to_file=False, file_path="app.log"):
         if cls._instance is None:
             cls._instance = super(ConfigStructureLogger, cls).__new__(cls)
-            cls._instance._initialize()
+            cls._instance._log_to_file_arg = log_to_file
+            cls._instance._file_path_arg = file_path
         return cls._instance
 
-    def _initialize(self):
-        self.logger = logging.getLogger("bot_discord_logger")
+    def __init__(self, *, log_to_file=False, file_path="app.log"):
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger("bot_discord_logger")
+            self.logger.setLevel(logging.INFO)
 
-        if not self.logger.handlers:
-            handler = logging.StreamHandler(sys.stdout)
-            handler.setFormatter(CustomJsonFormatter())
-            self.logger.addHandler(handler)
+            if not any(isinstance(h, logging.StreamHandler) for h in self.logger.handlers):
+                console_handler = logging.StreamHandler(sys.stdout)
+                console_handler.setFormatter(CustomJsonFormatter())
+                self.logger.addHandler(console_handler)
+
+            effective_log_to_file = getattr(self, '_log_to_file_arg', log_to_file)
+            effective_file_path = getattr(self, '_file_path_arg', file_path)
+
+            if effective_log_to_file and not any(isinstance(h, logging.FileHandler) for h in self.logger.handlers):
+                try:
+                    file_handler = logging.FileHandler(effective_file_path)
+                    file_handler.setFormatter(CustomJsonFormatter())
+                    self.logger.addHandler(file_handler)
+                except Exception as e:
+                    print(f"Erro ao configurar o FileHandler: {e}")
 
     def info(self, *, code: str, message: str):
         self.logger._log(logging.INFO, msg=message, args=(), extra={"code": code})

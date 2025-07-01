@@ -13,7 +13,7 @@ class DiscordInformacoes:
                 continue
 
             roles = [
-                Role(id=role.id, nome=role.name)
+                Role(id_role=role.id, nome=role.name)
                 for role in membro.roles
             ]
 
@@ -21,7 +21,7 @@ class DiscordInformacoes:
                 continue
 
             jogador = Jogador(
-                id=membro.id,
+                id_role=membro.id,
                 nome=membro.display_name,
                 roles=roles
             )

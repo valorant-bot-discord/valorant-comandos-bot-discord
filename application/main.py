@@ -28,4 +28,4 @@ async def valorant(ctx: Context) -> None:
 
 
 if __name__ == "__main__":
-    bot.run(config.TOKEN_BOT)
+    bot.run(config.token_bot)
