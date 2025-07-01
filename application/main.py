@@ -1,10 +1,10 @@
-from adapter.config.bot_config import create_bot
-from adapter.config.inicializacao_config import config
-from application.constantes import AUTHORIZED_SERVER_ID
-from application.commands.valorant_comandos import Valorant
-from discord import Message
 from discord.ext.commands import Context
-from adapter.config.logs.logger_config import ConfigStructureLogger
+
+from adapter.config.bot_config import create_bot
+from adapter.config.decoradores import valida_comandos_entrada
+from adapter.config.inicializacao_config import config
+from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from application.usecase.sortear_agentes_jogadores_usecase import SortearAgentesJogadoresUseCase
 
 LOG_CODE = "executa-comando-iniciar-bot"
 bot = create_bot()
@@ -21,25 +21,11 @@ async def on_ready() -> None:
         raise
 
 
-@bot.event
-async def on_message(message: Message) -> None:
-    # Ignora mensagens do próprio bot
-    if message.author == bot.user:
-        return
-
-    server_id = getattr(message.guild, 'id', None)
-
-    if message.guild and str(server_id) == AUTHORIZED_SERVER_ID:
-        await bot.process_commands(message)
-    else:
-        logger.warning(code=LOG_CODE, message=f"Acesso não autorizado do servidor {server_id}")
-        await message.channel.send("Este servidor não tem permissão para usar o bot.")
-
-
 @bot.command(name='valorant')
+@valida_comandos_entrada
 async def valorant(ctx: Context) -> None:
-    await Valorant(bot, ctx).registro_comando()
+    await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
 
 
 if __name__ == "__main__":
-    bot.run(config.TOKEN_BOT)
+    bot.run(config.token_bot)
