@@ -4,7 +4,7 @@ logger = ConfigStructureLogger()
 LOG_CODE = "cria-view-timeout"
 
 
-async def handle_view_timeout(view, message, timeout_message="Tempo para interação esgotado"):
+async def handle_view_timeout(view, message, timeout_message="Tempo para interação esgotado. Execute o comando novamente."):
     for item in view.children:
         item.disabled = True
     try:
