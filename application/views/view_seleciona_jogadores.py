@@ -103,9 +103,10 @@ class ViewSelecionaJogadores(View):
             return
         try:
             resultado = SorteadorDeAgentesValorant.sortear(jogadores=jogadores_selecionados)
-            mensagem = "\n".join(f"{j.nome}: {a.nome}" for j, a in resultado.items())
+            mensagem = "\n".join(
+                f"{jogador.nome} → {agente.nome} ({agente.funcao})" for jogador, agente in resultado.items())
             await interaction.response.send_message(
-                f"**Sorteio realizado:**\n{mensagem}",
+                f"Sorteio finalizado: \n{mensagem}",
                 ephemeral=False
             )
         except ValueError as exc:
