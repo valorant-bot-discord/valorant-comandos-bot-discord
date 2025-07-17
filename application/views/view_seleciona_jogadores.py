@@ -36,9 +36,11 @@ class ViewSelecionaJogadores(View):
                     botao.label = botao.label.strip('✅ ').strip()
                 await interaction.response.edit_message(content="", view=self)
             except Exception as ex:
-                message = ex.args[0] if ex.args else "Erro ao alternar seleção."
+                message = ex.args[0] if ex.args else "Erro inesperado ao alternar seleção."
                 logger.error(code=LOG_CODE, message=message, throw=ex)
-                await interaction.response.send_message("Erro ao alternar seleção.", ephemeral=True)
+                await interaction.response.send_message(
+                    "Erro ao alternar seleção. Tente novamente ou contate o responsável pelo bot.",
+                    ephemeral=True)
 
         return callback
 
@@ -109,9 +111,11 @@ class ViewSelecionaJogadores(View):
                 f"Sorteio finalizado: \n{mensagem}",
                 ephemeral=False
             )
-        except ValueError as exc:
+        except ValueError as ex:
+            message = ex.args[0] if ex.args else "Erro inesperado ao sortear agentes."
+            logger.error(code=LOG_CODE, message=message, throw=ex)
             await interaction.response.send_message(
-                str(exc),
+                "Erro ao sortear agentes. Tente novamente ou contate o responsável pelo bot.",
                 ephemeral=True
             )
 
