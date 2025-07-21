@@ -11,7 +11,8 @@ class SorteadorDeAgentesValorant:
     def sortear(jogadores: list[Jogador]) -> dict[Jogador, Agente]:
         agentes = obter_agentes()
         if not agentes or len(agentes) < len(jogadores):
-            raise ValueError("Não há agentes suficientes disponíveis para o sorteio.")
+            raise ValueError(
+                f"Não há agentes suficientes disponíveis para o sorteio. Quantidade máxima: {len(agentes)}. Você selecionou: {len(jogadores)}")
 
         random.shuffle(jogadores)
         agentes_sorteados = random.sample(agentes, len(jogadores))
