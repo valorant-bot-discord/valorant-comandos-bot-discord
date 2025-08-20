@@ -35,14 +35,15 @@ class ConfigStructureLogger:
                 except Exception as e:
                     print(f"Erro ao configurar o FileHandler: {e}")
 
-    def info(self, *, code: str, message: str):
-        self.logger._log(logging.INFO, msg=message, args=(), extra={"code": code})
+    def info(self, *, code: str, message: str, payload=None):
+        self.logger._log(logging.INFO, msg=message, args=(), extra={"code": code, "payload": payload})
 
-    def warning(self, *, code: str, message: str):
-        self.logger._log(logging.WARNING, msg=message, args=(), extra={"code": code})
+    def warning(self, *, code: str, message: str, payload=None):
+        self.logger._log(logging.WARNING, msg=message, args=(), extra={"code": code, "payload": payload})
 
-    def error(self, *, code: str, message: str = None, throw: Exception = None):
-        self.logger._log(logging.ERROR, msg=message, args=(), extra={"code": code, "throw": throw})
+    def error(self, *, code: str, message: str = None, throw: Exception = None, payload=None):
+        self.logger._log(logging.ERROR, msg=message, args=(), extra={"code": code, "throw": throw, "payload": payload})
 
-    def critical(self, *, code: str, message: str = None, throw: Exception = None):
-        self.logger._log(logging.CRITICAL, msg=message, args=(), extra={"code": code, "throw": throw})
+    def critical(self, *, code: str, message: str = None, throw: Exception = None, payload=None):
+        self.logger._log(logging.CRITICAL, msg=message, args=(),
+                         extra={"code": code, "throw": throw, "payload": payload})
