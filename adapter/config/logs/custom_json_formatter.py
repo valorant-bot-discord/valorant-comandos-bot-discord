@@ -8,7 +8,6 @@ from adapter.constantes import DATETIME_FORMAT
 from adapter.exception.log_exceptions import LoggerErrorException
 from adapter.utils.logger_utils import extract_throw_info
 
-
 class CustomJsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         try:
@@ -20,8 +19,13 @@ class CustomJsonFormatter(logging.Formatter):
                 "Severity": record.levelname
             }
 
+            # Se tiver payload válido, atualiza o campo
+            if hasattr(record, "payload") and record.payload is not None:
+                log_data["Payload"] = record.payload
+
             if record.levelname in ("ERROR", "CRITICAL") and hasattr(record, "throw") and record.throw:
                 log_data["Throw"] = self._format_throw_field(record.throw)
+
             return json.dumps(log_data, ensure_ascii=False)
         except Exception as ex:
             fallback_log = {
