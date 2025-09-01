@@ -18,35 +18,19 @@ logger = ConfigStructureLogger()
 async def on_ready() -> None:
     try:
         payload = [servidor_discord.to_dict(g) for g in bot.guilds]
-
-        logger.info(
-            code=LOG_CODE,
-            message="Iniciando bot com sucesso.",
-            payload=payload
-        )
+        logger.info(code=LOG_CODE, message="Iniciando bot com sucesso.", payload=payload)
 
     except Exception as ex:
-        logger.error(
-            code=LOG_CODE,
-            message="Erro ao iniciar o bot",
-            throw=ex
-        )
+        logger.error(code=LOG_CODE, message="Erro ao iniciar o bot", throw=ex)
         raise
 
 
 @bot.event
 async def on_guild_join(guild) -> None:
     try:
-        logger.info(
-            code=LOG_CODE,
-            message=f"Bot adicionado ao servidor: {guild.name} (ID: {guild.id})"
-        )
+        logger.info(code=LOG_CODE, message=f"Bot adicionado ao servidor: {guild.name} (ID: {guild.id})")
     except Exception as ex:
-        logger.error(
-            code=LOG_CODE,
-            message=f"Erro ao registrar entrada no servidor {guild.name}",
-            throw=ex
-        )
+        logger.error(code=LOG_CODE, message=f"Erro ao registrar entrada no servidor {guild.name}", throw=ex)
 
 
 @bot.command(name='valorant')
