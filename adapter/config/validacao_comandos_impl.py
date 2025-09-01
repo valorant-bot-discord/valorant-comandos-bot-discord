@@ -5,7 +5,6 @@ from domain.services.validacao_comandos import ValidacaoComandos
 LOG_CODE = "valida-eventos-entrada"
 logger = ConfigStructureLogger()
 
-
 class ValidacaoComandosImpl(ValidacaoComandos):
     def __init__(self):
         self.authorized_server_id = AUTHORIZED_SERVER_ID

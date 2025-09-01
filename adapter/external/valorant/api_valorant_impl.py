@@ -13,7 +13,8 @@ class ApiValorantImpl(ApiValorant):
     def consultar_agentes(self) -> list[Agente] | None:
         agentes = []
         try:
-            response = requests.get(f"{API_VALORANT}/agents", timeout=0.5)
+            response = requests.get(f"{API_VALORANT}/agents", timeout=0.5, params={"language": "pt-BR"})
+            response.raise_for_status()
 
             for agent in response.json()["data"]:
                 if agent.get("isPlayableCharacter"):

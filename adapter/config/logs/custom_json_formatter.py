@@ -16,10 +16,13 @@ class CustomJsonFormatter(logging.Formatter):
                 "Code": getattr(record, "code", "sem-codigo"),
                 "Message": record.getMessage(),
                 "Datetime": datetime.fromtimestamp(record.created).strftime(DATETIME_FORMAT),
-                "Severity": record.levelname
+                "Severity": record.levelname,
             }
 
-            # Se tiver payload válido, atualiza o campo
+            transaction_id = getattr(record, "transaction_id", None)
+            if transaction_id:
+                log_data["TransactionId"] = transaction_id
+
             if hasattr(record, "payload") and record.payload is not None:
                 log_data["Payload"] = record.payload
 
@@ -37,7 +40,6 @@ class CustomJsonFormatter(logging.Formatter):
                 "Error": str(ex)
             }
             return json.dumps(fallback_log, ensure_ascii=False)
-
     @staticmethod
     def _format_throw_field(throw) -> dict:
         try:
@@ -48,3 +50,4 @@ class CustomJsonFormatter(logging.Formatter):
             return extract_throw_info(throw, "Indisponível (não é um objeto de exceção)")
         except Exception as ex:
             return extract_throw_info(LoggerErrorException(ex), "Indisponível")
+
