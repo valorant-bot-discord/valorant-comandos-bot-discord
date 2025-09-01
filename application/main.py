@@ -42,6 +42,6 @@ async def valorant(ctx: Context) -> None:
 if __name__ == "__main__":
     try:
         bot.run(config.token_bot)
-    except Exception as exception:
-        logger.critical(code=LOG_CODE, message="Erro crítico na inicialização", throw=exception)
+    except Exception as ex:
+        logger.critical(code=LOG_CODE, message="Erro crítico na inicialização", throw=ex)
         sys.exit(1)

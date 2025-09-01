@@ -2,7 +2,7 @@ import logging
 import sys
 
 from adapter.config.logs.custom_json_formatter import CustomJsonFormatter
-from adapter.config.logs.transaction_context import TransactionContext
+from adapter.config.logs.transaction_context import transaction_context
 
 
 class ConfigStructureLogger:
@@ -38,7 +38,7 @@ class ConfigStructureLogger:
 
     @staticmethod
     def _get_transaction_id():
-        return TransactionContext.get_id()
+        return transaction_context.get_id()
 
     def info(self, *, code: str, message: str, payload=None):
         self.logger._log(logging.INFO, msg=message, args=(),
