@@ -1,6 +1,5 @@
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import logger
 
-logger = ConfigStructureLogger()
 LOG_CODE = "cria-view-timeout"
 
 

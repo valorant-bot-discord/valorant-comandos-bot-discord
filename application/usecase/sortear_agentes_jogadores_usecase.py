@@ -2,14 +2,13 @@ import discord
 from discord import DiscordException
 from discord.ext import commands
 
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import logger
 from discord.ext.commands import Context
 
 from adapter.dataprovider.discord_informacoes import DiscordInformacoes
 from application.commands.comandos_bot import ComandosBase
 from application.views.view_seleciona_jogadores import ViewSelecionaJogadores
 
-logger = ConfigStructureLogger()
 LOG_CODE = "sorteia-agentes-para-jogadores"
 
 
@@ -29,10 +28,12 @@ class SortearAgentesJogadoresUseCase(ComandosBase):
             view.message = message
         except DiscordException as ex:
             logger.error(code=LOG_CODE, message="Erro no Discord", throw=ex)
+            raise
         except discord.Forbidden as ex:
             logger.error(code=LOG_CODE, message="Permissões insuficientes para enviar mensagem no canal atual",
                          throw=ex)
             await self.ctx.send("Não posso enviar mensagens neste canal.")
+            raise
         except Exception as ex:
             logger.error(code=LOG_CODE, message="Erro inesperado", throw=ex)
             raise

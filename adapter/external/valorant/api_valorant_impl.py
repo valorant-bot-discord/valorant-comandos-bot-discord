@@ -1,12 +1,11 @@
 import requests
 
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import logger
 from adapter.constantes import API_VALORANT
 from application.service.api_valorant import ApiValorant
 from domain.entity.agente import Agente
 
 LOG_CODE = "consulta-infos-agentes"
-logger = ConfigStructureLogger()
 
 
 class ApiValorantImpl(ApiValorant):
