@@ -1,18 +1,17 @@
 import sys
 
+from discord.ext import commands
 from discord.ext.commands import Context
 
 from adapter.config.bot_config import create_bot
-from adapter.config.decoradores import valida_comandos_entrada
+from adapter.config.logs.transaction_context import transaction_context
+from application.decoradores.valida_comandos_entrada import valida_comandos_entrada
 from adapter.config.inicializacao_config import config
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
-from application.usecase.sortear_agentes_jogadores_usecase import SortearAgentesJogadoresUseCase
+from application.usecase.sortear_agentes_jogadores_usecase import SortearAgentesJogadoresUseCase, logger
 from domain.entity.servidor_discord import servidor_discord
 
 LOG_CODE = "executa-comando-iniciar-bot"
 bot = create_bot()
-logger = ConfigStructureLogger()
-
 
 @bot.event
 async def on_ready() -> None:
@@ -31,6 +30,17 @@ async def on_guild_join(guild) -> None:
         logger.info(code=LOG_CODE, message=f"Bot adicionado ao servidor: {guild.name} (ID: {guild.id})")
     except Exception as ex:
         logger.error(code=LOG_CODE, message=f"Erro ao registrar entrada no servidor {guild.name}", throw=ex)
+
+@bot.before_invoke
+async def before_any_command(ctx: Context):
+    transaction_context.start_new()
+
+@bot.event
+async def on_command_error(ctx: Context, error: commands.CommandError):
+    transaction_id = transaction_context.get_id()
+    error_message = f"Ocorreu um erro inesperado. Para suporte, informe o código: {transaction_id}"
+    await ctx.send(error_message)
+
 
 
 @bot.command(name='valorant')

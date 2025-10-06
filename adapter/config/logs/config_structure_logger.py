@@ -2,7 +2,6 @@ import logging
 import sys
 
 from adapter.config.logs.custom_json_formatter import CustomJsonFormatter
-from adapter.config.logs.transaction_context import transaction_context
 
 
 class ConfigStructureLogger:
@@ -36,23 +35,19 @@ class ConfigStructureLogger:
                 except Exception as e:
                     print(f"Erro ao configurar o FileHandler: {e}")
 
-    @staticmethod
-    def _get_transaction_id():
-        return transaction_context.get_id()
-
     def info(self, *, code: str, message: str, payload=None):
         self.logger._log(logging.INFO, msg=message, args=(),
-                         extra={"code": code, "payload": payload, "transaction_id": self._get_transaction_id()})
+                         extra={"code": code, "payload": payload})
 
     def warning(self, *, code: str, message: str, payload=None):
         self.logger._log(logging.WARNING, msg=message, args=(),
-                         extra={"code": code, "payload": payload, "transaction_id": self._get_transaction_id()})
+                         extra={"code": code, "payload": payload})
 
     def error(self, *, code: str, message: str = None, throw: Exception = None, payload=None):
-        self.logger._log(logging.ERROR, msg=message, args=(), extra={"code": code, "throw": throw, "payload": payload,
-                                                                     "transaction_id": self._get_transaction_id()})
+        self.logger._log(logging.ERROR, msg=message, args=(), extra={"code": code, "throw": throw, "payload": payload})
 
     def critical(self, *, code: str, message: str = None, throw: Exception = None, payload=None):
         self.logger._log(logging.CRITICAL, msg=message, args=(),
-                         extra={"code": code, "throw": throw, "payload": payload,
-                                "transaction_id": self._get_transaction_id()})
+                         extra={"code": code, "throw": throw, "payload": payload})
+
+logger = ConfigStructureLogger()

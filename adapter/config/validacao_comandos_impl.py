@@ -1,9 +1,8 @@
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import logger
 from adapter.constantes import AUTHORIZED_SERVER_ID
 from domain.services.validacao_comandos import ValidacaoComandos
 
 LOG_CODE = "valida-eventos-entrada"
-logger = ConfigStructureLogger()
 
 class ValidacaoComandosImpl(ValidacaoComandos):
     def __init__(self):

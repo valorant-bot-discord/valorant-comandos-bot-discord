@@ -1,13 +1,13 @@
 from discord.ui import View, Button
 from discord import ButtonStyle, Interaction
 
+from adapter.config.logs.transaction_context import transaction_context
 from application.constantes import WAIT_FOR_MESSAGE_TIMEOUT, JOGADORES_POR_PAGINA
 from domain.services.selecionador_jogadores import SelecionadorJogadores
 from domain.services.sorteador_agentes_valorant import SorteadorDeAgentesValorant
-from adapter.config.logs.config_structure_logger import ConfigStructureLogger
+from adapter.config.logs.config_structure_logger import logger
 from utils.discord_view_utils import handle_view_timeout
 
-logger = ConfigStructureLogger()
 LOG_CODE = "cria-view-selecionador-jogadores"
 
 
@@ -20,6 +20,7 @@ class ViewSelecionaJogadores(View):
         self.message = None
         self.jogadores = jogadores
         self.pagina_atual = pagina_atual
+        transaction_context.set_id(transaction_context.get_id())
 
         self.total_paginas = (len(jogadores) + JOGADORES_POR_PAGINA - 1) // JOGADORES_POR_PAGINA
         self._criar_botoes_pagina()
