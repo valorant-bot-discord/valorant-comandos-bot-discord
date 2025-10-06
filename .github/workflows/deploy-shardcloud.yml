@@ -16,26 +16,52 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trigger deploy no Shardcloud via Webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.SHARDCLOUD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
         run: |
-          echo "🚀 Iniciando deploy no Shardcloud..."
+          echo "Iniciando deploy no Shardcloud (payload + debug)..."
           
-          RESPONSE=$(curl -X POST \
+          PAYLOAD=$(jq -n \
+            --arg repo "$REPO" \
+            --arg ref "$REF" \
+            --arg sha "$SHA" \
+            --arg actor "$ACTOR" \
+            '{repository: $repo, ref: $ref, sha: $sha, actor: $actor}')
+          
+          echo "Payload enviado:"
+          echo "$PAYLOAD"
+          
+          # Executa o POST, grava cabeçalhos e corpo em arquivos separados
+          RESPONSE_HEADERS="$(mktemp)"
+          RESPONSE_BODY="$(mktemp)"
+          
+          HTTP_CODE=$(curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -w "\n%{http_code}" \
-            -s \
-            "${{ secrets.SHARDCLOUD_WEBHOOK_URL }}")
+            -H "User-Agent: GitHub-Actions/shardcloud-deploy" \
+            -H "Accept: application/json" \
+            -d "$PAYLOAD" \
+            -w "%{http_code}" \
+            -D "$RESPONSE_HEADERS" \
+            -o "$RESPONSE_BODY" \
+            -sS)
           
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "=== HTTP STATUS: $HTTP_CODE ==="
+          echo "=== RESPONSE HEADERS ==="
+          cat "$RESPONSE_HEADERS" || true
+          echo "=== RESPONSE BODY ==="
+          cat "$RESPONSE_BODY" || true
           
-          echo "Status HTTP: $HTTP_CODE"
-          
+          # Salva como artifact para download se quiser (opcional)
+          echo "::notice file=response.log::HTTP $HTTP_CODE"
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "Deploy iniciado com sucesso no Shardcloud!"
-            echo "Resposta: $BODY"
+            echo "Deploy iniciado (HTTP $HTTP_CODE)."
+            exit 0
           else
-            echo "Falha ao iniciar deploy no Shardcloud"
-            echo "Resposta: $BODY"
+            echo "Falha ao iniciar deploy (HTTP $HTTP_CODE). Veja response body/headers acima."
             exit 1
           fi
 
