@@ -1,0 +1,46 @@
+name: Deploy to Shardcloud
+
+on:
+  push:
+    branches:
+      - prod
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy para Shardcloud
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Trigger deploy no Shardcloud via Webhook
+        run: |
+          echo "🚀 Iniciando deploy no Shardcloud..."
+          
+          RESPONSE=$(curl -X POST \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s \
+            "${{ secrets.SHARDCLOUD_WEBHOOK_URL }}")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Status HTTP: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Deploy iniciado com sucesso no Shardcloud!"
+            echo "Resposta: $BODY"
+          else
+            echo "Falha ao iniciar deploy no Shardcloud"
+            echo "Resposta: $BODY"
+            exit 1
+          fi
+
+      - name: Notificar conclusão
+        if: success()
+        run: |
+          echo "Deploy disparado com sucesso!"
+          echo "Verifique o status no painel do Shardcloud"
