@@ -18,35 +18,25 @@ jobs:
       - name: Garantir que o jq está instalado
         run: |
           if ! command -v jq >/dev/null 2>&1; then
-          echo "jq não encontrado, instalando..."
-          sudo apt-get update && sudo apt-get install -y jq
+            echo "jq não encontrado, instalando..."
+            sudo apt-get update && sudo apt-get install -y jq
           else
-          echo "jq já está instalado"
+            echo "jq já está instalado"
           fi
 
       - name: Trigger deploy no Shardcloud via Webhook
         env:
           WEBHOOK_URL: ${{ secrets.SHARDCLOUD_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
-          REF: ${{ github.ref }}
-          SHA: ${{ github.sha }}
+          BRANCH: prod
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
 
-          echo "Iniciando deploy no Shardcloud"
+          echo "Iniciando deploy no Shardcloud..."
 
-          # Monta o payload JSON
-          if command -v jq >/dev/null 2>&1; then
-            PAYLOAD=$(jq -n \
-              --arg repo "${REPO}" \
-              --arg ref "${REF}" \
-              --arg sha "${SHA}" \
-              --arg actor "${ACTOR}" \
-              '{repository: $repo, ref: $ref, sha: $sha, actor: $actor}')
-          else
-            PAYLOAD="{\"repository\": \"${REPO}\", \"ref\": \"${REF}\", \"sha\": \"${SHA}\", \"actor\": \"${ACTOR}\"}"
-          fi
+          # Monta o payload JSON com branch simplificada
+          PAYLOAD="{\"repository\": \"${REPO}\", \"branch\": \"${BRANCH}\", \"actor\": \"${ACTOR}\"}"
 
           echo "Payload enviado:"
           echo "$PAYLOAD"
@@ -74,9 +64,9 @@ jobs:
               -sS || echo "000")
 
             echo "=== HTTP STATUS: $HTTP_CODE ==="
-            echo "=== RESPONSE HEADERS (trial $ATTEMPT) ==="
+            echo "=== RESPONSE HEADERS (tentativa $ATTEMPT) ==="
             cat "$RESPONSE_HEADERS" || true
-            echo "=== RESPONSE BODY (trial $ATTEMPT) ==="
+            echo "=== RESPONSE BODY (tentativa $ATTEMPT) ==="
             cat "$RESPONSE_BODY" || true
 
             if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
@@ -85,7 +75,6 @@ jobs:
               break
             fi
 
-            # Retryable on 5xx or network error (HTTP 000)
             if [ "$HTTP_CODE" -ge 500 ] || [ "$HTTP_CODE" = "000" ]; then
               echo "Resposta $HTTP_CODE — aguardando $RETRY_DELAY segundos antes da próxima tentativa..."
               sleep $RETRY_DELAY
@@ -93,7 +82,6 @@ jobs:
               continue
             fi
 
-            # For other codes (4xx) don't retry
             echo "Resposta não retryable (HTTP $HTTP_CODE). Saindo com falha."
             break
           done
