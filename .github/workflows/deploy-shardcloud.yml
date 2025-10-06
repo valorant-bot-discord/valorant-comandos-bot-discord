@@ -1,0 +1,105 @@
+name: Deploy to Shardcloud
+
+on:
+  push:
+    branches:
+      - prod
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy para Shardcloud
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Garantir que o jq está instalado
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "jq não encontrado, instalando..."
+            sudo apt-get update && sudo apt-get install -y jq
+          else
+            echo "jq já está instalado"
+          fi
+
+      - name: Trigger deploy no Shardcloud via Webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.SHARDCLOUD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          BRANCH: prod
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          echo "Iniciando deploy no Shardcloud..."
+
+          # Monta o payload JSON com branch simplificada
+          PAYLOAD="{\"repository\": \"${REPO}\", \"branch\": \"${BRANCH}\", \"actor\": \"${ACTOR}\"}"
+
+          echo "Payload enviado:"
+          echo "$PAYLOAD"
+
+          RESPONSE_HEADERS="$(mktemp)"
+          RESPONSE_BODY="$(mktemp)"
+
+          MAX_RETRIES=3
+          RETRY_DELAY=5
+          ATTEMPT=0
+          SUCCESS=0
+
+          while [ "$ATTEMPT" -lt "$MAX_RETRIES" ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "-- Tentativa $ATTEMPT de $MAX_RETRIES --"
+
+            HTTP_CODE=$(curl -X POST "${WEBHOOK_URL}" \
+              -H "Content-Type: application/json" \
+              -H "User-Agent: GitHub-Actions/shardcloud-deploy" \
+              -H "Accept: application/json" \
+              -d "$PAYLOAD" \
+              -w "%{http_code}" \
+              -D "$RESPONSE_HEADERS" \
+              -o "$RESPONSE_BODY" \
+              -sS || echo "000")
+
+            echo "=== HTTP STATUS: $HTTP_CODE ==="
+            echo "=== RESPONSE HEADERS (tentativa $ATTEMPT) ==="
+            cat "$RESPONSE_HEADERS" || true
+            echo "=== RESPONSE BODY (tentativa $ATTEMPT) ==="
+            cat "$RESPONSE_BODY" || true
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "Deploy iniciado com sucesso (HTTP $HTTP_CODE)."
+              SUCCESS=1
+              break
+            fi
+
+            if [ "$HTTP_CODE" -ge 500 ] || [ "$HTTP_CODE" = "000" ]; then
+              echo "Resposta $HTTP_CODE — aguardando $RETRY_DELAY segundos antes da próxima tentativa..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+              continue
+            fi
+
+            echo "Resposta não retryable (HTTP $HTTP_CODE). Saindo com falha."
+            break
+          done
+
+          echo "::group::Upload debug artifacts"
+          echo "response-headers:"
+          cat "$RESPONSE_HEADERS" || true
+          echo "response-body:"
+          cat "$RESPONSE_BODY" || true
+          echo "::endgroup::"
+
+          if [ "$SUCCESS" -ne 1 ]; then
+            echo "Falha ao iniciar deploy. Veja response body/headers acima."
+            exit 1
+          fi
+
+      - name: Notificar conclusão
+        if: success()
+        run: |
+          echo "Deploy disparado com sucesso!"
+          echo "Verifique o status no painel do Shardcloud"
