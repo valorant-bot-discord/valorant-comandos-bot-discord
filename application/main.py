@@ -13,6 +13,7 @@ from domain.entity.servidor_discord import servidor_discord
 LOG_CODE = "executa-comando-iniciar-bot"
 bot = create_bot()
 
+
 @bot.event
 async def on_ready() -> None:
     try:
@@ -31,19 +32,28 @@ async def on_guild_join(guild) -> None:
     except Exception as ex:
         logger.error(code=LOG_CODE, message=f"Erro ao registrar entrada no servidor {guild.name}", throw=ex)
 
-@bot.before_invoke
-async def before_any_command(ctx: Context):
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
     transaction_context.start_new()
+    await bot.process_commands(message)
+
 
 @bot.event
 async def on_command_error(ctx: Context, error: commands.CommandError):
+    if isinstance(error, commands.CommandNotFound):
+        return
+
     transaction_id = transaction_context.get_id()
     error_message = f"Ocorreu um erro inesperado. Para suporte, informe o código: {transaction_id}"
+    logger.error(code=LOG_CODE, message=f"Erro no comando de entrada", throw=error)
     await ctx.send(error_message)
 
 
-
-@bot.command(name='valorant')
+@bot.command(name='valorant', aliases=['Valorant', 'VALORANT', 'vava', 'Vava', 'VAVA'])
 @valida_comandos_entrada
 async def valorant(ctx: Context) -> None:
     await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
