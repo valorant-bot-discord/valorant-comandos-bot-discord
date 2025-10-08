@@ -1,4 +1,4 @@
-from adapter.constantes import ROLES_IGNORAR
+from adapter.constantes import ROLES_PERMITIDAS
 from domain.entity.jogadores import Jogador
 from domain.entity.role import Role
 
@@ -17,7 +17,7 @@ class DiscordInformacoes:
                 for role in membro.roles
             ]
 
-            if any(role.nome.lower() in ROLES_IGNORAR for role in roles):
+            if not any(role.nome.lower() in ROLES_PERMITIDAS for role in roles):
                 continue
 
             jogador = Jogador(
