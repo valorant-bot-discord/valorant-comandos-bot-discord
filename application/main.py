@@ -53,7 +53,7 @@ async def on_command_error(ctx: Context, error: commands.CommandError):
     await ctx.send(error_message)
 
 
-@bot.command(name='valorant', aliases=['Valorant', 'VALORANT', 'vava', 'Vava', 'VAVA'])
+@bot.command(name='valorant', aliases=['Valorant', 'VALORANT', 'vava', 'Vava', 'VAVA' ])
 @valida_comandos_entrada
 async def valorant(ctx: Context) -> None:
     await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
