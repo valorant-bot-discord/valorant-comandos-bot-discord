@@ -1,0 +1,6 @@
+DISPLAY_NAME=valorant-comandos-bot-discord
+ENTRYPOINT=python
+START=python -m application.main
+MEMORY=512
+VERSION=recommended
+DESCRIPTION=Este bot tem como objetivo oferecer funcionalidades relacionadas a jogos (inicialmente Valorant) diretamente no Discord.

@@ -1,0 +1,32 @@
+name: Deploy to ShardCloud (prod)
+
+on:
+  push:
+    branches: [ "prod" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Criar ZIP do projeto
+        run: |
+          # exclua pasta .git e artefatos locais
+          zip -r project.zip . -x ".git/*" -x ".github/*" -x "venv/*" -x "__pycache__/*"
+
+      - name: Fazer upload para ShardCloud
+        env:
+          SHARDCLOUD_TOKEN: ${{ secrets.SHARDCLOUD_TOKEN }}
+          SHARDCLOUD_APP_ID: ${{ secrets.SHARDCLOUD_APP_ID }}
+        run: |
+          echo "Enviando ZIP para ShardCloud..."
+          curl --fail --show-error --silent \
+            -X PUT "https://shardcloud.app/api/apps/${SHARDCLOUD_APP_ID}/file" \
+            -H "Authorization: Bearer ${SHARDCLOUD_TOKEN}" \
+            -F project=@project.zip \
+            -o response.json -w "\nHTTP_STATUS:%{http_code}\n"
+          cat response.json
