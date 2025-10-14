@@ -13,10 +13,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Criar ZIP do projeto
+      - name: Criar e Verificar ZIP do projeto
         run: |
           # exclua pasta .git e artefatos locais
           zip -r project.zip . -x ".git/*" -x ".github/*" -x "venv/*" -x "__pycache__/*"
+          
+          echo "Verificando o arquivo ZIP criado:"
+          ls -lh project.zip
 
       - name: Fazer upload para ShardCloud
         env:
@@ -24,10 +27,17 @@ jobs:
           SHARDCLOUD_APP_ID: ${{ secrets.SHARDCLOUD_APP_ID }}
         run: |
           echo "Enviando ZIP para ShardCloud..."
-          curl --fail --show-error --silent \
+          curl --show-error --silent \
             -X PUT "https://shardcloud.app/api/apps/${SHARDCLOUD_APP_ID}/file" \
             -H "Authorization: Bearer ${SHARDCLOUD_TOKEN}" \
-            -H "Content-Type: multipart/form-data" \
             -F project=@project.zip \
             -o response.json -w "\nHTTP_STATUS:%{http_code}\n"
+          
+          echo "--- Início da Resposta da API ---"
           cat response.json
+          echo "\n--- Fim da Resposta da API ---"
+
+          STATUS_CODE=$(grep 'HTTP_STATUS' <<< "$(cat response.json)$(echo)" | tail -n 1 | cut -d: -f2)
+          if [[ -z "$STATUS_CODE" || "$STATUS_CODE" -ge 400 ]]; then
+            exit 1
+          fi
