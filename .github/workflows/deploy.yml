@@ -27,6 +27,7 @@ jobs:
           curl --fail --show-error --silent \
             -X PUT "https://shardcloud.app/api/apps/${SHARDCLOUD_APP_ID}/file" \
             -H "Authorization: Bearer ${SHARDCLOUD_TOKEN}" \
+            -H "Content-Type: multipart/form-data" \
             -F project=@project.zip \
             -o response.json -w "\nHTTP_STATUS:%{http_code}\n"
           cat response.json
