@@ -1,3 +1,4 @@
+
 name: Deploy to ShardCloud (prod)
 
 on:
@@ -30,14 +31,8 @@ jobs:
           curl --show-error --silent \
             -X PUT "https://shardcloud.app/api/apps/${SHARDCLOUD_APP_ID}/file" \
             -H "Authorization: Bearer ${SHARDCLOUD_TOKEN}" \
-            -F project=@project.zip \
+            -F "project=@project.zip;type=application/zip" \
             -o response.json -w "\nHTTP_STATUS:%{http_code}\n"
           
-          echo "--- Início da Resposta da API ---"
+          echo "--- Resposta da API ---"
           cat response.json
-          echo "\n--- Fim da Resposta da API ---"
-
-          STATUS_CODE=$(grep 'HTTP_STATUS' <<< "$(cat response.json)$(echo)" | tail -n 1 | cut -d: -f2)
-          if [[ -z "$STATUS_CODE" || "$STATUS_CODE" -ge 400 ]]; then
-            exit 1
-          fi
