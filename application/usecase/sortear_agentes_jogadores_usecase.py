@@ -32,7 +32,7 @@ class SortearAgentesJogadoresUseCase(ComandosBase):
         except discord.Forbidden as ex:
             logger.error(code=LOG_CODE, message="Permissões insuficientes para enviar mensagem no canal atual",
                          throw=ex)
-            await self.ctx.send("Não posso enviar mensagens neste canal.")
+            await self.ctx.send("Não posso enviar mensagens neste canal!")
             raise
         except Exception as ex:
             logger.error(code=LOG_CODE, message="Erro inesperado", throw=ex)
