@@ -20,5 +20,5 @@ class ValidacaoComandosImpl(ValidacaoComandos):
             return True
 
         logger.warning(code=LOG_CODE, message=f"Acesso não autorizado ao servidor {server_id}:{server_name}")
-        await mensagem.channel.send("Este servidor não tem permissão para usar o bot.")
+        await mensagem.channel.send("Este servidor não tem permissão para usar o bot!")
         return False
