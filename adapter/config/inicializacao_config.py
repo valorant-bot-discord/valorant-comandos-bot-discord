@@ -12,6 +12,7 @@ class BotConfig:
             self.token_bot = os.getenv("TOKEN_BOT")
             self.token_server = os.getenv("TOKEN_SERVER")
             self.application_name = os.getenv("APPLICATION_NAME")
+            self.cache_ttl_agentes = int(os.getenv("CACHE_TTL_AGENTES", "86400"))
 
             if not self.token_bot:
                 raise TokenAusenteException("TOKEN_BOT")

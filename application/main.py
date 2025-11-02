@@ -56,7 +56,11 @@ async def on_command_error(ctx: Context, error: commands.CommandError):
 @bot.command(name='valorant', aliases=['Valorant', 'VALORANT', 'vava', 'Vava', 'VAVA'])
 @valida_comandos_entrada
 async def valorant(ctx: Context) -> None:
-    await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
+    try:
+        await SortearAgentesJogadoresUseCase(bot, ctx).registro_comando()
+    except Exception:
+        error_message = f"Ocorreu um erro inesperado. Para suporte, informe o código: {transaction_context.get_id()}"
+        await ctx.send(error_message)
 
 
 if __name__ == "__main__":
