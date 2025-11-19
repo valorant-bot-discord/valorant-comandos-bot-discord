@@ -1,7 +1,6 @@
 from discord.ui import View, Button
 from discord import ButtonStyle, Interaction
 
-from adapter.config.logs.transaction_context import transaction_context
 from application.constantes import WAIT_FOR_MESSAGE_TIMEOUT, JOGADORES_POR_PAGINA
 from domain.services.selecionador_jogadores import SelecionadorJogadores
 from domain.services.sorteador_agentes_valorant import SorteadorDeAgentesValorant
@@ -20,8 +19,6 @@ class ViewSelecionaJogadores(View):
         self.message = None
         self.jogadores = jogadores
         self.pagina_atual = pagina_atual
-        transaction_context.set_id(transaction_context.get_id())
-
         self.total_paginas = (len(jogadores) + JOGADORES_POR_PAGINA - 1) // JOGADORES_POR_PAGINA
         self._criar_botoes_pagina()
 
@@ -97,7 +94,7 @@ class ViewSelecionaJogadores(View):
         nova_view.message = self.message
         await interaction.response.edit_message(content="", view=nova_view)
 
-    async def sortear_agentes(self, interaction):
+    async def sortear_agentes(self, interaction: Interaction):
         jogadores_selecionados = self.selecionador_jogadores.obter_selecionados()
         if not jogadores_selecionados:
             await interaction.response.send_message(
