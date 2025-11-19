@@ -5,6 +5,7 @@ from discord.ext.commands import Context
 
 from adapter.config.bot_config import create_bot
 from adapter.config.logs.transaction_context import transaction_context
+from adapter.patches.ajuste_contexto_view import aplicar_ajuste_de_contexto
 from application.decoradores.valida_comandos_entrada import valida_comandos_entrada
 from adapter.config.inicializacao_config import config
 from application.usecase.sortear_agentes_jogadores_usecase import SortearAgentesJogadoresUseCase, logger
@@ -65,6 +66,7 @@ async def valorant(ctx: Context) -> None:
 
 if __name__ == "__main__":
     try:
+        aplicar_ajuste_de_contexto()
         bot.run(config.token_bot)
     except Exception as ex:
         logger.critical(code=LOG_CODE, message="Erro crítico na inicialização", throw=ex)
